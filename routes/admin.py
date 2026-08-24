@@ -10,8 +10,9 @@ from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from models.models import db, Admin, Assessment, Question, Submission, Candidate, Answer
-from services.stats_service import get_dashboard_stats
+from models.models import db, Admin, Assessment, Question, Submission, Candidate, Answer, CodingSubmission, CodingProblem
+from services.stats_service import get_dashboard_stats, get_recent_coding_submissions
+from extensions import cache
 from services.export_service import (
     export_csv, export_xlsx, export_daily_reports_csv, export_daily_reports_xlsx, _get_daily_report_data
 )
@@ -73,7 +74,6 @@ def logout():
 def dashboard():
     try:
         stats = get_dashboard_stats()
-        # Single query for both passed and failed, split in Python
         recent_results = (
             db.session.query(Submission)
             .options(joinedload(Submission.candidate), joinedload(Submission.assessment))
@@ -85,13 +85,14 @@ def dashboard():
         passed_results = [r for r in recent_results if r.status == 'pass'][:10]
         failed_results = [r for r in recent_results if r.status == 'fail'][:10]
         assessments = Assessment.query.order_by(Assessment.created_at.desc()).all()
+        recent_coding_submissions = get_recent_coding_submissions(limit=15)
+
         return render_template(
             'admin/dashboard.html',
             stats=stats,
+            assessments=assessments,
             passed_results=passed_results,
             failed_results=failed_results,
-            assessments=assessments,
-            all_assessments=assessments
         )
     except Exception as e:
         db.session.rollback()
@@ -381,12 +382,21 @@ def export_results():
 def delete_submission(submission_id):
     submission = Submission.query.get_or_404(submission_id)
     cand_name = submission.candidate.full_name if submission.candidate else f"Candidate #{submission.candidate_id}"
+    candidate_id = submission.candidate_id
     
-    # Delete answers for this submission first
+    # Delete answers & coding submissions for this submission first
     Answer.query.filter_by(submission_id=submission.id).delete(synchronize_session=False)
+    CodingSubmission.query.filter_by(submission_id=submission.id).delete(synchronize_session=False)
     db.session.delete(submission)
     db.session.commit()
+
+    # Check if candidate has any remaining submissions; if not, delete candidate record too
+    remaining = Submission.query.filter_by(candidate_id=candidate_id).count()
+    if remaining == 0:
+        Candidate.query.filter_by(id=candidate_id).delete(synchronize_session=False)
+        db.session.commit()
     
+    cache.clear()
     flash(f'Assessment record for {cand_name} (ID #{submission_id}) has been deleted.', 'success')
     return redirect(request.referrer or url_for('admin.results'))
 
@@ -399,19 +409,46 @@ def bulk_delete_submissions():
     assessment_id = request.form.get('assessment_id', type=int)
     before_date_str = request.form.get('before_date', '').strip()
     status_filter = request.form.get('status_filter', '').strip().lower()
+    wipe_all = request.form.get('wipe_all_candidates') == '1' or delete_scope == 'reset_drive'
 
+    # Option 1: Complete Portal & Recruitment Drive Reset
+    if wipe_all:
+        Answer.query.delete(synchronize_session=False)
+        CodingSubmission.query.delete(synchronize_session=False)
+        Submission.query.delete(synchronize_session=False)
+        Candidate.query.delete(synchronize_session=False)
+        db.session.commit()
+        cache.clear()
+        flash('Successfully reset the entire campus drive. All candidate registrations, test attempts, answers, and coding submissions have been wiped clean.', 'success')
+        return redirect(request.referrer or url_for('admin.dashboard'))
+
+    # Option 2: Selected Checkbox Deletion
     if submission_ids and delete_scope == 'selected':
         sub_ids = [int(i) for i in submission_ids if str(i).isdigit()]
         if sub_ids:
+            # Find associated candidate IDs before deleting
+            cand_ids = [s.candidate_id for s in Submission.query.filter(Submission.id.in_(sub_ids)).all()]
+            
             Answer.query.filter(Answer.submission_id.in_(sub_ids)).delete(synchronize_session=False)
+            CodingSubmission.query.filter(CodingSubmission.submission_id.in_(sub_ids)).delete(synchronize_session=False)
             deleted_count = Submission.query.filter(Submission.id.in_(sub_ids)).delete(synchronize_session=False)
             db.session.commit()
+
+            # Clean orphaned candidates
+            if cand_ids:
+                for cid in set(cand_ids):
+                    if Submission.query.filter_by(candidate_id=cid).count() == 0:
+                        Candidate.query.filter_by(id=cid).delete(synchronize_session=False)
+                db.session.commit()
+
+            cache.clear()
             flash(f'Successfully deleted {deleted_count} selected assessment record(s).', 'success')
             return redirect(request.referrer or url_for('admin.results'))
         else:
             flash('No valid records selected for deletion.', 'warning')
             return redirect(request.referrer or url_for('admin.results'))
 
+    # Option 3: Filtered Deletion
     query = Submission.query
 
     if assessment_id:
@@ -436,12 +473,48 @@ def bulk_delete_submissions():
         return redirect(request.referrer or url_for('admin.results'))
 
     rec_ids = [r.id for r in records]
+    cand_ids = [r.candidate_id for r in records]
+
     Answer.query.filter(Answer.submission_id.in_(rec_ids)).delete(synchronize_session=False)
+    CodingSubmission.query.filter(CodingSubmission.submission_id.in_(rec_ids)).delete(synchronize_session=False)
     Submission.query.filter(Submission.id.in_(rec_ids)).delete(synchronize_session=False)
     db.session.commit()
 
+    # Clean orphaned candidates
+    if cand_ids:
+        for cid in set(cand_ids):
+            if Submission.query.filter_by(candidate_id=cid).count() == 0:
+                Candidate.query.filter_by(id=cid).delete(synchronize_session=False)
+        db.session.commit()
+
+    cache.clear()
     flash(f'Successfully deleted {count} old assessment record(s).', 'success')
     return redirect(request.referrer or url_for('admin.results'))
+
+
+# ─────────────────────────────────────────────
+# API — Coding Submission Source Code for Modal
+# ─────────────────────────────────────────────
+
+@admin_bp.route('/api/coding-submissions/<int:coding_sub_id>')
+@login_required
+def api_coding_submission(coding_sub_id):
+    cs = CodingSubmission.query.get_or_404(coding_sub_id)
+    return jsonify({
+        'id': cs.id,
+        'candidate_name': cs.submission.candidate.full_name if cs.submission and cs.submission.candidate else 'Unknown',
+        'hall_ticket': cs.submission.candidate.hall_ticket if cs.submission and cs.submission.candidate else 'N/A',
+        'email': cs.submission.candidate.email if cs.submission and cs.submission.candidate else 'N/A',
+        'problem_title': cs.problem.title if cs.problem else 'Coding Challenge',
+        'language': cs.language,
+        'source_code': cs.source_code,
+        'passed_testcases': cs.passed_testcases,
+        'total_testcases': cs.total_testcases,
+        'score': cs.score,
+        'execution_time_ms': cs.execution_time_ms,
+        'status': cs.status,
+        'submitted_at': cs.submitted_at.strftime('%d %b %Y, %I:%M %p') if cs.submitted_at else 'N/A'
+    })
 
 
 # ─────────────────────────────────────────────
