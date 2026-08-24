@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block body %}
+<style>
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active {
+    display: flex;
+  }
+  .modal-box {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 28px;
+    width: 90%;
+    max-width: 520px;
+    color: #ffffff;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close:hover {
+    color: #ffffff;
+  }
+</style>
+
+<div class="admin-layout">
+
+  <!-- ── Top Navigation Bar ────────────────────────────────────────── -->
+  <header class="admin-topnav">
+    <div class="topnav-left">
+      <img src="{{ url_for('static', filename='image.png') }}" alt="Lionix Logo" class="topnav-brand-img" />
+    </div>
+
+    <nav class="topnav-pill-nav">
+      <a href="{{ url_for('admin.dashboard') }}" class="nav-pill-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="{{ url_for('admin.assessments') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Assessments
+      </a>
+      <a href="{{ url_for('admin.results') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Results
+      </a>
+      <a href="{{ url_for('admin.daily_reports') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+        Daily Reports
+      </a>
+    
+      <a href="{{ url_for('admin.report_tech_round_2') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Technical Round 2 Reports
+      </a>
+    </nav>
+
+    <div class="topnav-right">
+      <div class="admin-info">
+        <div class="admin-avatar">{{ current_user.email[0].upper() }}</div>
+        <div class="admin-details">
+          <span class="admin-email">{{ current_user.email }}</span>
+          <span class="admin-role">Administrator</span>
+        </div>
+      </div>
+      <a href="{{ url_for('admin.logout') }}" class="btn-logout" title="Logout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ── Main Content ─────────────────────────────────────────── -->
+  <main class="admin-main">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-sub">Overview of recruitment drive activity</p>
+      </div>
+      <div class="header-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.assessments') }}" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Assessment
+        </a>
+      </div>
+    </header>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card glass-card">
+        <div class="stat-icon stat-violet">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Total Candidates</span>
+          <span class="stat-value">{{ stats.total_candidates }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card glass-card">
+        <div class="stat-icon stat-blue">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Total Assessments</span>
+          <span class="stat-value">{{ stats.total_assessments }}</span>
+          <span class="stat-badge badge-active">{{ stats.active_assessments }} active</span>
+        </div>
+      </div>
+
+      <div class="stat-card glass-card">
+        <div class="stat-icon stat-amber">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Total Attempts</span>
+          <span class="stat-value">{{ stats.total_attempts }}</span>
+          {% if stats.in_progress > 0 %}
+          <span class="stat-badge badge-warning">{{ stats.in_progress }} in progress</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="stat-card glass-card">
+        <div class="stat-icon stat-emerald">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Passed</span>
+          <span class="stat-value stat-pass">{{ stats.passed }}</span>
+          <span class="stat-badge badge-pass">{{ stats.pass_rate }}% pass rate</span>
+        </div>
+      </div>
+
+      <div class="stat-card glass-card">
+        <div class="stat-icon stat-red">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Failed</span>
+          <span class="stat-value stat-fail">{{ stats.failed }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Grid: Assessments + Professional Analytics Charts -->
+    <div class="dashboard-grid" style="grid-template-columns: 1fr 1.25fr 1.25fr; gap: 20px;">
+      <!-- Active Assessments -->
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Assessments</h2>
+          <a href="{{ url_for('admin.assessments') }}" class="panel-link">View All</a>
+        </div>
+        <div class="panel-body">
+          {% if assessments %}
+          <div class="assessment-list">
+            {% for a in assessments[:5] %}
+            <div class="assessment-row">
+              <div class="ar-info">
+                <span class="ar-title">{{ a.title }}</span>
+                <span class="ar-meta">{{ a.question_count }} questions · {{ a.duration }} min</span>
+              </div>
+              <div class="ar-right">
+                <span class="badge {% if a.status == 'active' %}badge-active{% else %}badge-inactive{% endif %}">
+                  {{ a.status | title }}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <p>No assessments yet. <a href="{{ url_for('admin.assessments') }}">Create one</a>.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Professional Donut / Pie Chart Panel -->
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Result Distribution 📊</h2>
+          <a href="{{ url_for('admin.results') }}" class="panel-link">View Details</a>
+        </div>
+        <div class="panel-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 260px; position: relative;">
+          <canvas id="passFailChart"></canvas>
+          <div style="position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+            <div style="font-size: 22px; font-weight: 800; color: var(--text-primary);">{{ stats.pass_rate }}%</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Pass Rate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outcome Analytics Bar Chart Panel -->
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Candidate Outcome 📈</h2>
+          <a href="{{ url_for('admin.results') }}" class="panel-link">View Results</a>
+        </div>
+        <div class="panel-body" style="height: 260px; position: relative; padding-top: 10px;">
+          <canvas id="trackPerformanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal: Clean Up Old Records -->
+<div class="modal-overlay" id="cleanupModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">🧹 Clean Up Old Assessment Records</h3>
+      <button type="button" class="modal-close" onclick="closeCleanUpModal()">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('admin.bulk_delete_submissions') }}" onsubmit="return confirm('WARNING: This will permanently delete all assessment records matching the selected criteria. Are you sure?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="delete_scope" value="filter"/>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #cbd5e1;">Target Assessment Drive</label>
+        <select name="assessment_id" class="form-select" style="width: 100%; background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 12px;">
+          <option value="">-- All Assessment Drives --</option>
+          {% if all_assessments %}
+            {% for a in all_assessments %}
+              <option value="{{ a.id }}">{{ a.title }}</option>
+            {% endfor %}
+          {% endif %}
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #cbd5e1;">Delete Submissions Before Date</label>
+        <input type="date" name="before_date" class="form-control" style="width: 100%; background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 12px;" />
+        <small style="color: #94a3b8; font-size: 12px;">Leave empty to not restrict by date.</small>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #cbd5e1;">Status Filter</label>
+        <select name="status_filter" class="form-select" style="width: 100%; background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 12px;">
+          <option value="">All Statuses (Passed & Failed)</option>
+          <option value="fail">Failed Only</option>
+          <option value="pass">Passed Only</option>
+        </select>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-ghost" onclick="closeCleanUpModal()">Cancel</button>
+        <button type="submit" class="btn btn-danger" style="background: #dc2626; border: none; font-weight: 700;">
+          🗑️ Permanently Delete Records
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openCleanUpModal() {
+    document.getElementById('cleanupModal').classList.add('active');
+  }
+
+  function closeCleanUpModal() {
+    document.getElementById('cleanupModal').classList.remove('active');
+  }
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const passed = {{ stats.passed }};
+    const failed = {{ stats.failed }};
+    const inProgress = {{ stats.in_progress }};
+
+    // 1. Pass / Fail Professional Donut Chart
+    const ctxPie = document.getElementById('passFailChart');
+    if (ctxPie) {
+      new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+          labels: ['Passed', 'Failed', 'In Progress'],
+          datasets: [{
+            data: [passed, failed, inProgress],
+            backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+            hoverBackgroundColor: ['#059669', '#dc2626', '#d97706'],
+            borderWidth: 3,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 14,
+                font: { family: 'Inter', size: 12, weight: '600' },
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const val = context.raw;
+                  const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                  return ` ${context.label}: ${val} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Candidate Outcome Bar Chart
+    const ctxBar = document.getElementById('trackPerformanceChart');
+    if (ctxBar) {
+      new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: ['Passed', 'Failed'],
+          datasets: [{
+            label: 'Candidates',
+            data: [passed, failed],
+            backgroundColor: ['rgba(16, 185, 129, 0.85)', 'rgba(239, 68, 68, 0.85)'],
+            borderRadius: 8,
+            barThickness: 44
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(226, 232, 240, 0.6)' },
+              ticks: { font: { family: 'Inter', size: 11 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Inter', size: 12, weight: '600' } }
+            }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

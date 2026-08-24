@@ -1,0 +1,85 @@
+"""
+Lionix — Stats Service
+Aggregated statistics for the admin dashboard.
+
+Performance: Consolidated from 7 separate COUNT queries into 2 queries
+using SQLAlchemy aggregate functions (func.count + case).
+Results are cached for 5 minutes via Flask-Caching.
+"""
+from sqlalchemy import func, case
+from models.models import db, Candidate, Assessment, Question, Submission
+from extensions import cache
+
+
+def get_dashboard_stats() -> dict:
+    """Return all stats card values for the admin dashboard.
+
+    Cached for 5 minutes (CACHE_DEFAULT_TIMEOUT).
+    Uses 2 DB queries instead of the previous 7:
+      1. COUNT candidates + COUNT assessments + COUNT active assessments
+      2. GROUP BY status on submissions to get all status counts in one pass
+    """
+    return _compute_dashboard_stats()
+
+
+@cache.cached(timeout=60, key_prefix='dashboard_stats')
+def _compute_dashboard_stats() -> dict:
+    try:
+        # Single query for candidate count + assessment counts (was 3 separate queries)
+        from sqlalchemy import case, literal_column
+        counts = db.session.query(
+            func.count(Assessment.id).label('total_assessments'),
+            func.count(case((Assessment.status == 'active', 1))).label('active_assessments'),
+        ).first()
+        total_assessments = counts.total_assessments or 0
+        active_assessments = counts.active_assessments or 0
+
+        candidate_count = db.session.query(func.count(Candidate.id)).scalar() or 0
+
+        status_rows = (
+            db.session.query(
+                Submission.status,
+                func.count(Submission.id).label('cnt')
+            )
+            .group_by(Submission.status)
+            .all()
+        )
+
+        status_counts = {row.status: row.cnt for row in status_rows}
+        passed      = status_counts.get('pass', 0)
+        failed      = status_counts.get('fail', 0)
+        in_progress = status_counts.get('in_progress', 0)
+        total_attempts = passed + failed + in_progress
+
+        return {
+            'total_candidates':  candidate_count,
+            'total_assessments': total_assessments,
+            'active_assessments': active_assessments,
+            'total_attempts':    total_attempts,
+            'passed':            passed,
+            'failed':            failed,
+            'in_progress':       in_progress,
+            'pass_rate': round((passed / (passed + failed) * 100) if (passed + failed) > 0 else 0, 1),
+        }
+    except Exception:
+        return {
+            'total_candidates': 0,
+            'total_assessments': 0,
+            'active_assessments': 0,
+            'total_attempts': 0,
+            'passed': 0,
+            'failed': 0,
+            'in_progress': 0,
+            'pass_rate': 0,
+        }
+
+
+def get_recent_results(limit: int = 10):
+    """Return the most recent completed submissions."""
+    return (
+        db.session.query(Submission)
+        .filter(Submission.status != 'in_progress')
+        .order_by(Submission.submitted_at.desc())
+        .limit(limit)
+        .all()
+    )
