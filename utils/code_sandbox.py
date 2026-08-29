@@ -5,6 +5,7 @@ with strict timeouts, memory isolation, and output diff evaluation.
 """
 
 import os
+import re
 import sys
 import time
 import shutil
@@ -92,11 +93,19 @@ def execute_testcase(source_code: str, language: str, input_data: str, expected_
             compile_cmd = None
 
         elif lang == "java":
-            file_path = os.path.join(temp_dir, "Solution.java")
+            # Remove package declarations to prevent classloader mismatches
+            cleaned_code = re.sub(r'^\s*package\s+[^;]+;', '', source_code, flags=re.MULTILINE)
+            # Dynamically find the public class name, fallback to any class name
+            match = re.search(r'public\s+class\s+([A-Za-z0-9_]+)', cleaned_code)
+            if not match:
+                match = re.search(r'class\s+([A-Za-z0-9_]+)', cleaned_code)
+            class_name = match.group(1) if match else "Solution"
+
+            file_path = os.path.join(temp_dir, f"{class_name}.java")
             with open(file_path, "w", encoding="utf-8") as f:
-                f.write(source_code)
-            compile_cmd = ["javac", file_path]
-            cmd = ["java", "-cp", temp_dir, "Solution"]
+                f.write(cleaned_code)
+            compile_cmd = ["javac", "-encoding", "UTF-8", file_path]
+            cmd = ["java", "-cp", temp_dir, "-Xmx256m", class_name]
 
         elif lang in ("cpp", "c++", "c"):
             file_path = os.path.join(temp_dir, "solution.cpp")

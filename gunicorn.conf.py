@@ -3,7 +3,7 @@ import multiprocessing
 import os
 
 # ── Binding ──────────────────────────────────────────────────
-bind = os.environ.get('BIND', '0.0.0.0:8000')
+bind = os.environ.get('BIND', '127.0.0.1:5001')
 
 # ── Workers ──────────────────────────────────────────────────
 workers = int(os.environ.get('WORKERS', 4))
