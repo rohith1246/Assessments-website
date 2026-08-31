@@ -47,6 +47,51 @@
         </div>
       </div>
 
+      {% if is_round2 %}
+      <!-- ── ROUND 2: RESULTS HIDDEN FROM CANDIDATE (CONFIDENTIAL EVALUATION) ── -->
+      <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 16px; padding: 32px 24px; text-align: center; margin-bottom: 24px;">
+        <div style="font-size: 48px; margin-bottom: 12px;">🛡️</div>
+        <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px;">Technical Assessment Submitted</h2>
+        <div style="display: inline-block; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; padding: 5px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 18px;">
+          ⏳ Evaluation In Progress
+        </div>
+        <p style="font-size: 14px; color: #cbd5e1; line-height: 1.7; max-width: 580px; margin: 0 auto 20px;">
+          Thank you for completing <strong>{{ assessment.title }}</strong>. Your submitted responses have been encrypted and submitted directly to the Lionix technical evaluation panel.
+        </p>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; max-width: 540px; margin: 0 auto;">
+          Results and technical interview invitations will be evaluated and communicated directly by the hiring panel via your registered email: <strong style="color: #c084fc;">{{ candidate.email }}</strong>.
+        </p>
+      </div>
+
+      <div class="pass-info" style="display:flex; flex-direction:column; gap:6px; align-items:center; text-align:center; padding:16px;">
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:center;">
+          <span>Questions Submitted: <strong>{{ submission.total_questions }}</strong></span>
+          <span style="color:var(--text-faint);">•</span>
+          <span>Status: <strong style="color: #fbbf24;">Under Review</strong></span>
+        </div>
+        {% if submission.submitted_at_ist %}
+        <div style="font-size:12px; color:var(--text-muted);">
+          Submitted on {{ submission.submitted_at_ist.strftime('%d %b %Y at %I:%M %p') }} IST
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="result-footer-msg">
+        <p class="rf-brand">Lionix Campus Recruitment Platform</p>
+        
+        <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+          <a href="{{ url_for('candidate.dashboard') }}" class="btn" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+            ← Return to Candidate Dashboard
+          </a>
+          <form method="POST" action="{{ url_for('candidate.logout') }}" style="margin: 0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-ghost" style="padding: 6px 18px; font-size: 12px; color: #94a3b8; cursor: pointer; border: none; background: transparent;">Log Out / Exit</button>
+          </form>
+        </div>
+      </div>
+
+      {% else %}
+      <!-- ── ROUND 1: STANDARD SCORECARD VIEW ── -->
       <!-- Score Ring -->
       <div class="score-ring-wrapper">
         {% set pct = submission.percentage | round(1) %}
@@ -68,13 +113,8 @@
             class="ring-progress"
           />
           <!-- Inner text -->
-          {% if is_coding_round %}
-          <text x="90" y="74" text-anchor="middle" fill="#0f172a" font-size="36" font-weight="800" font-family="Inter,sans-serif">{{ submission.coding_score or submission.score }}</text>
-          <text x="90" y="96" text-anchor="middle" fill="#64748b" font-size="12" font-weight="600" font-family="Inter,sans-serif">Coding Points</text>
-          {% else %}
           <text x="90" y="74" text-anchor="middle" fill="#0f172a" font-size="38" font-weight="800" font-family="Inter,sans-serif">{{ submission.score }}</text>
           <text x="90" y="96" text-anchor="middle" fill="#64748b" font-size="13" font-weight="600" font-family="Inter,sans-serif">out of {{ submission.total_questions }}</text>
-          {% endif %}
           <text x="90" y="120" text-anchor="middle" fill="{% if submission.status == 'pass' %}#047857{% else %}#ef4444{% endif %}" font-size="18" font-weight="800" font-family="Inter,sans-serif">{{ pct }}%</text>
         </svg>
 
@@ -90,18 +130,6 @@
 
       <!-- Stats Breakdown -->
       <div class="result-stats" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));">
-        {% if is_coding_round %}
-        <div class="rs-item" style="background: rgba(139, 92, 246, 0.08); border-color: rgba(139, 92, 246, 0.25);">
-          <span class="rs-icon" style="color: #a78bfa;">💻</span>
-          <span class="rs-value" style="color: #a78bfa;">{{ submission.coding_score or 0 }}</span>
-          <span class="rs-label" style="color: #a78bfa;">Coding Score</span>
-        </div>
-        <div class="rs-item rs-correct">
-          <span class="rs-icon">⚡</span>
-          <span class="rs-value">{{ submission.total_questions }}</span>
-          <span class="rs-label">Challenges</span>
-        </div>
-        {% else %}
         <div class="rs-item rs-correct">
           <span class="rs-icon">✓</span>
           <span class="rs-value">{{ submission.score }}</span>
@@ -122,7 +150,6 @@
           <span class="rs-value">{{ submission.total_questions }}</span>
           <span class="rs-label">Total MCQs</span>
         </div>
-        {% endif %}
         <div class="rs-item rs-vio">
           <span class="rs-icon">⚠</span>
           <span class="rs-value">{{ submission.violations }}</span>
@@ -146,20 +173,16 @@
 
       <div class="result-footer-msg">
         {% if submission.status == 'pass' %}
-          {% if is_coding_round %}
-          <p class="rf-pass">🎉 Congratulations! You have successfully completed and cleared Round 2 (Technical Live Coding). Our recruitment panel will review your code submissions and reach out for final technical interviews.</p>
-          {% else %}
-          <p class="rf-pass">🎉 Congratulations! You have cleared Round 1 (Online MCQ Assessment). You are now eligible to take Round 2 (Technical Live Coding Sandbox).</p>
-          {% endif %}
+          <p class="rf-pass">🎉 Congratulations! You have cleared Round 1 (Online Screening Test). You are now eligible to take Round 2 (Technical Evaluation).</p>
         {% else %}
-        <p class="rf-fail">Thank you for participating in this campus drive. Unfortunately, your score did not meet the qualifying threshold for this stage.</p>
+          <p class="rf-fail">Thank you for participating in this campus drive. Unfortunately, your score did not meet the qualifying threshold for this stage.</p>
         {% endif %}
         <p class="rf-brand">Lionix Campus Recruitment Platform</p>
         
         <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px; align-items: center;">
-          {% if not is_coding_round and submission.status == 'pass' %}
+          {% if submission.status == 'pass' %}
           <a href="{{ url_for('candidate.dashboard') }}" class="btn" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; padding: 12px 28px; border-radius: 10px; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
-            Proceed to Round 2 (Live Coding) →
+            Proceed to Round 2 (Technical Evaluation) →
           </a>
           {% else %}
           <a href="{{ url_for('candidate.dashboard') }}" class="btn" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
@@ -172,6 +195,7 @@
           </form>
         </div>
       </div>
+      {% endif %}
     </div>
   </div>
 </div>

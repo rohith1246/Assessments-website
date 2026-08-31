@@ -580,6 +580,8 @@ def result(submission_id):
             if user_ans.upper() != (q.correct_answer or '').strip().upper():
                 wrong += 1
 
+    is_round2 = ('Round 2' in (submission.assessment.title or '') or 'Technical Round' in (submission.assessment.title or '') or submission.assessment_id == 4)
+
     return render_template(
         'candidate/result.html',
         submission=submission,
@@ -588,4 +590,5 @@ def result(submission_id):
         wrong=wrong,
         unanswered=unanswered,
         is_coding_round=is_coding_round,
+        is_round2=is_round2,
     )

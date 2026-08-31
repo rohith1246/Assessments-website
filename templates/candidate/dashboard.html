@@ -597,22 +597,22 @@
         {% if sub_round2 %}
           <div class="scorecard-mini">
             <div class="sc-row">
-              <span class="sc-label">FIB Score:</span>
-              <span class="sc-val" style="color: #c084fc;">{{ sub_round2.score }} / {{ sub_round2.total_questions }}</span>
+              <span class="sc-label">Assessment Track:</span>
+              <span class="sc-val" style="color: #c084fc; font-size: 12px;">{{ sub_round2.assessment.title }}</span>
             </div>
             <div class="sc-row">
-              <span class="sc-label">Percentage:</span>
-              <span class="sc-val">{{ "%.1f"|format(sub_round2.percentage) }}%</span>
+              <span class="sc-label">Evaluation Status:</span>
+              <span class="sc-val" style="color: #fbbf24; font-weight: 700;">Under Review</span>
             </div>
             <div class="sc-row">
-              <span class="sc-label">Status:</span>
-              <span class="sc-val" style="color: {% if sub_round2.status == 'pass' %}#10b981{% else %}#ef4444{% endif %};">
-                {{ sub_round2.status|upper }}
+              <span class="sc-label">Submitted On:</span>
+              <span class="sc-val" style="color: #94a3b8; font-size: 11px;">
+                {{ sub_round2.submitted_at_ist.strftime('%d %b %Y, %I:%M %p') if sub_round2.submitted_at_ist else 'Recorded' }}
               </span>
             </div>
           </div>
           <a href="{{ url_for('assessment.result', submission_id=sub_round2.id) }}" class="btn-view-score">
-            View Round 2 Scorecard →
+            View Submission Status →
           </a>
         {% elif in_prog_round2 %}
           <form method="POST" action="{{ url_for('assessment.start') }}">
