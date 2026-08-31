@@ -1,6 +1,7 @@
 """
 seed_internal_company_test.py
-Creates and populates the 'Screening Test' assessment with 20 accessible MCQs:
+Creates and populates the 'Screening Test' assessment with 20 balanced MCQs
+with evenly distributed answer keys (5 A's, 5 B's, 5 C's, 5 D's):
 - 10 Linux / Ubuntu / Docker Basics MCQs
 - 5 Git / GitHub everyday commands MCQs (clone, add, commit, push, pull)
 - 5 Python OOP Concepts MCQs (Classes, __init__, self, Inheritance, Encapsulation, Polymorphism)
@@ -53,31 +54,32 @@ def seed_assessment():
     assessment_id = cur.fetchone()[0]
     print(f"Assessment created with ID: {assessment_id}", flush=True)
 
+    # 20 Questions with balanced option distribution across A, B, C, D
     questions = [
         # ── SECTION 1: LINUX / UBUNTU / DOCKER BASICS (10 Questions) ──
         (
             "Q1. Which command is used in Linux/Ubuntu to list all files and directories, including hidden ones?",
-            "ls -a",
-            "list --all",
-            "show -hidden",
             "dir /h",
-            "A"
+            "ls -a",
+            "show --hidden",
+            "list -all",
+            "B"
         ),
         (
             "Q2. Which Linux command is used to navigate back to the parent directory?",
-            "cd ..",
             "cd ~",
             "cd /",
+            "cd ..",
             "back",
-            "A"
+            "C"
         ),
         (
             "Q3. Which command is used to create a new directory named 'project' in Linux?",
-            "mkdir project",
-            "touch project",
             "create project",
+            "touch project",
             "newdir project",
-            "A"
+            "mkdir project",
+            "D"
         ),
         (
             "Q4. Which command makes a shell script file named 'script.sh' executable in Linux?",
@@ -89,27 +91,27 @@ def seed_assessment():
         ),
         (
             "Q5. Which command is used to view the entire contents of a text file named 'app.log' in the terminal?",
-            "cat app.log",
             "open app.log",
+            "cat app.log",
             "echo app.log",
             "print app.log",
-            "A"
+            "B"
         ),
         (
             "Q6. Which package management command is used to install new software packages on Ubuntu Linux?",
-            "sudo apt install <package-name>",
-            "sudo yum install <package-name>",
             "brew install <package-name>",
             "pip install-ubuntu <package-name>",
-            "A"
+            "sudo apt install <package-name>",
+            "sudo yum install <package-name>",
+            "C"
         ),
         (
             "Q7. Which Docker command is used to download an image (if not present) and start a new container from it?",
-            "docker run",
             "docker start",
             "docker build",
             "docker init",
-            "A"
+            "docker run",
+            "D"
         ),
         (
             "Q8. Which command displays all currently running Docker containers?",
@@ -121,29 +123,29 @@ def seed_assessment():
         ),
         (
             "Q9. Which Docker command builds a Docker image from a Dockerfile located in the current directory?",
-            "docker build -t myapp .",
             "docker create myapp",
+            "docker build -t myapp .",
             "docker compile -i myapp",
             "docker make myapp",
-            "A"
+            "B"
         ),
         (
             "Q10. How do you stop a running Docker container with container ID 'abc123'?",
-            "docker stop abc123",
-            "docker kill-all",
-            "docker pause",
             "docker delete abc123",
-            "A"
+            "docker kill-all",
+            "docker stop abc123",
+            "docker pause",
+            "C"
         ),
 
         # ── SECTION 2: GIT & GITHUB BASICS (5 Questions) ──
         (
             "Q11. Which Git command is used to download an existing remote repository from GitHub to your local computer?",
-            "git clone <repository-url>",
-            "git download <repository-url>",
             "git copy <repository-url>",
             "git fetch-new <repository-url>",
-            "A"
+            "git download <repository-url>",
+            "git clone <repository-url>",
+            "D"
         ),
         (
             "Q12. Which command stages all modified and newly created files in the current directory for the next commit?",
@@ -155,27 +157,27 @@ def seed_assessment():
         ),
         (
             "Q13. What is the correct Git command to save your staged changes to local history with a message?",
-            "git commit -m \"Your commit message\"",
             "git save -message \"Your commit message\"",
+            "git commit -m \"Your commit message\"",
             "git push -m \"Your commit message\"",
             "git log -m \"Your commit message\"",
-            "A"
+            "B"
         ),
         (
             "Q14. Which command uploads your committed changes from the local 'main' branch to the remote repository on GitHub?",
-            "git push origin main",
             "git upload origin main",
             "git send origin main",
+            "git push origin main",
             "git export main",
-            "A"
+            "C"
         ),
         (
             "Q15. Which command fetches the latest commits from the remote GitHub repository and merges them into your current local branch?",
-            "git pull",
-            "git push",
             "git sync-only",
+            "git push",
             "git refresh",
-            "A"
+            "git pull",
+            "D"
         ),
 
         # ── SECTION 3: PYTHON OBJECT-ORIENTED PROGRAMMING (OOP) (5 Questions) ──
@@ -189,27 +191,27 @@ def seed_assessment():
         ),
         (
             "Q17. Why is 'self' passed as the first parameter in instance methods of a Python class?",
-            "It represents the specific instance of the class and provides access to its attributes and methods",
             "It is a required keyword that makes Python code execute faster",
+            "It represents the specific instance of the class and provides access to its attributes and methods",
             "It defines the parent class from which the class inherits",
             "It converts local variables into global variables",
-            "A"
+            "B"
         ),
         (
             "Q18. Consider the following Python OOP code:\n\nclass Animal:\n    def speak(self):\n        return \"Animal sound\"\n\nclass Dog(Animal):\n    def speak(self):\n        return \"Woof!\"\n\npet = Dog()\nprint(pet.speak())\n\nWhat will be printed?",
-            "Woof!",
             "Animal sound",
             "None",
+            "Woof!",
             "AttributeError: Dog has no speak method",
-            "A"
+            "C"
         ),
         (
             "Q19. In Python OOP (Encapsulation), what naming convention is commonly used to indicate that an attribute or method is private/internal?",
-            "Prefixing the attribute name with an underscore or double underscore (e.g., _age or __salary)",
             "Using the 'private' keyword before variable declaration",
             "Writing the attribute name entirely in UPPERCASE",
             "Declaring the variable inside a tuple",
-            "A"
+            "Prefixing the attribute name with an underscore or double underscore (e.g., _age or __salary)",
+            "D"
         ),
         (
             "Q20. What is the concept of 'Polymorphism' in Python Object-Oriented Programming?",
@@ -228,7 +230,7 @@ def seed_assessment():
         """, (assessment_id, q, a, b, c, d, ans))
 
     conn.commit()
-    print(f"Successfully inserted {len(questions)} questions into 'Screening Test' (ID: {assessment_id})!", flush=True)
+    print(f"Successfully inserted {len(questions)} questions into 'Screening Test' (ID: {assessment_id}) with balanced options!", flush=True)
 
     # Display active assessments
     cur.execute("SELECT id, title, duration, status, (SELECT count(*) FROM assessment_questions WHERE assessment_id=assessment_drives.id) as qcount FROM assessment_drives ORDER BY id;")
