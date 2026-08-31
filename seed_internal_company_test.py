@@ -23,9 +23,12 @@ def seed_assessment():
             print(f"Sequence sync note: {e}")
             db.session.rollback()
 
-        # Check if an assessment titled "Internal Company Test" already exists
+        # Check if an assessment titled "Screening Test" already exists
         existing_assessments = Assessment.query.filter(
-            Assessment.title.ilike('%Internal Company Test%')
+            db.or_(
+                Assessment.title.ilike('%Screening Test%'),
+                Assessment.title.ilike('%Internal Company Test%')
+            )
         ).all()
 
         for old_a in existing_assessments:
@@ -40,7 +43,7 @@ def seed_assessment():
 
         # Create new Assessment
         assessment = Assessment(
-            title="Internal Company Test",
+            title="Screening Test",
             description=(
                 "Comprehensive Technical Evaluation covering Ubuntu/Linux Administration, "
                 "Docker Environments, Terminal-Bench & Benchmark Debugging, GitHub Workflows & CI/CD, "
