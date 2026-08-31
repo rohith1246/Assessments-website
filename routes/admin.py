@@ -588,28 +588,61 @@ def export_daily_reports():
 @login_required
 def report_tech_round_2():
     page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+    status_filter = request.args.get('status', 'all').strip().lower()
+    track_filter = request.args.get('track', type=int)
     per_page = 25
 
-    query = db.session.query(
-        Candidate.full_name.label('candidate_name'),
-        Candidate.email,
-        Candidate.hall_ticket,
-        Submission.id.label('submission_id'),
-        Submission.score,
-        Submission.total_questions,
-        Submission.percentage,
-        Submission.status,
-        Submission.submitted_at
-    ).join(Submission, Candidate.id == Submission.candidate_id) \
-     .filter(Submission.assessment_id == 4) \
-     .order_by(Submission.submitted_at.desc())
+    query = (
+        db.session.query(Submission)
+        .options(
+            joinedload(Submission.candidate),
+            joinedload(Submission.assessment)
+        )
+        .join(Assessment, Submission.assessment_id == Assessment.id)
+        .filter(
+            Submission.status != 'in_progress',
+            db.or_(
+                Assessment.title.ilike('%Round 2%'),
+                Assessment.title.ilike('%Technical Round%'),
+                Assessment.id == 4
+            )
+        )
+    )
+
+    if status_filter in ('pass', 'fail'):
+        query = query.filter(Submission.status == status_filter)
+
+    if track_filter:
+        query = query.filter(Submission.assessment_id == track_filter)
+
+    if search:
+        like = f'%{search}%'
+        query = query.join(Submission.candidate).filter(
+            db.or_(
+                Candidate.full_name.ilike(like),
+                Candidate.hall_ticket.ilike(like),
+                Candidate.email.ilike(like),
+            )
+        )
+
+    query = query.order_by(
+        Submission.percentage.desc(),
+        Submission.score.desc(),
+        Submission.submitted_at.desc()
+    )
 
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    round2_assessments = Assessment.query.filter(Assessment.title.ilike('%Round 2%')).order_by(Assessment.title).all()
 
     return render_template(
         'admin/reports_tech_2.html',
         pagination=pagination,
-        reports=pagination.items
+        reports=pagination.items,
+        round2_assessments=round2_assessments,
+        selected_track=track_filter,
+        search=search,
+        status=status_filter
     )
 
 
@@ -620,18 +653,24 @@ def export_tech_round_2_reports(format_type):
     import csv
 
     status_filter = request.args.get('status', '').strip().lower()
+    track_filter = request.args.get('track', type=int)
 
-    query_base = db.session.query(
-        Candidate.full_name.label('candidate_name'),
-        Candidate.email,
-        Candidate.hall_ticket,
-        Submission.score,
-        Submission.total_questions,
-        Submission.percentage,
-        Submission.status,
-        Submission.submitted_at
-    ).join(Submission, Candidate.id == Submission.candidate_id) \
-     .filter(Submission.assessment_id == 4)
+    query_base = (
+        db.session.query(Submission)
+        .options(
+            joinedload(Submission.candidate),
+            joinedload(Submission.assessment)
+        )
+        .join(Assessment, Submission.assessment_id == Assessment.id)
+        .filter(
+            Submission.status != 'in_progress',
+            db.or_(
+                Assessment.title.ilike('%Round 2%'),
+                Assessment.title.ilike('%Technical Round%'),
+                Assessment.id == 4
+            )
+        )
+    )
 
     if status_filter in ('pass', 'passed'):
         query_base = query_base.filter(Submission.status == 'pass')
@@ -642,21 +681,26 @@ def export_tech_round_2_reports(format_type):
     else:
         file_suffix = "All_Candidates"
 
+    if track_filter:
+        query_base = query_base.filter(Submission.assessment_id == track_filter)
+
     query = query_base.order_by(Submission.submitted_at.desc()).all()
 
     if format_type == 'csv':
         si = StringIO()
         cw = csv.writer(si)
-        cw.writerow(['Candidate Name', 'Email', 'Hall Ticket', 'Score', 'Total Questions', 'Percentage', 'Status', 'Submitted At'])
+        cw.writerow(['Candidate Name', 'Email', 'Hall Ticket', 'Track / Assessment', 'Score', 'Total Questions', 'Percentage', 'Status', 'Violations', 'Submitted At'])
         for r in query:
             cw.writerow([
-                r.candidate_name,
-                r.email,
-                r.hall_ticket,
+                r.candidate.full_name if r.candidate else 'N/A',
+                r.candidate.email if r.candidate else 'N/A',
+                r.candidate.hall_ticket if r.candidate else 'N/A',
+                r.assessment.title if r.assessment else 'Round 2 FIB',
                 r.score,
                 r.total_questions,
                 f"{r.percentage:.1f}%",
                 r.status.upper(),
+                r.violations,
                 r.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if r.submitted_at else 'N/A'
             ])
         output = make_response(si.getvalue())
@@ -669,17 +713,19 @@ def export_tech_round_2_reports(format_type):
             import openpyxl
             wb = openpyxl.Workbook()
             ws = wb.active
-            ws.title = "Tech Round 2 Results"
-            ws.append(['Candidate Name', 'Email', 'Hall Ticket', 'Score', 'Total Questions', 'Percentage', 'Status', 'Submitted At'])
+            ws.title = "Tech Round 2 FIB Results"
+            ws.append(['Candidate Name', 'Email', 'Hall Ticket', 'Track / Assessment', 'Score', 'Total Questions', 'Percentage', 'Status', 'Violations', 'Submitted At'])
             for r in query:
                 ws.append([
-                    r.candidate_name,
-                    r.email,
-                    r.hall_ticket,
+                    r.candidate.full_name if r.candidate else 'N/A',
+                    r.candidate.email if r.candidate else 'N/A',
+                    r.candidate.hall_ticket if r.candidate else 'N/A',
+                    r.assessment.title if r.assessment else 'Round 2 FIB',
                     r.score,
                     r.total_questions,
                     f"{r.percentage:.1f}%",
                     r.status.upper(),
+                    r.violations,
                     r.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if r.submitted_at else 'N/A'
                 ])
             out = BytesIO()
@@ -689,19 +735,21 @@ def export_tech_round_2_reports(format_type):
             output.headers["Content-Disposition"] = f"attachment; filename=Technical_Round_2_{file_suffix}.xlsx"
             output.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             return output
-        except Exception as ex:
+        except Exception:
             si = StringIO()
             cw = csv.writer(si)
-            cw.writerow(['Candidate Name', 'Email', 'Hall Ticket', 'Score', 'Total Questions', 'Percentage', 'Status', 'Submitted At'])
+            cw.writerow(['Candidate Name', 'Email', 'Hall Ticket', 'Track / Assessment', 'Score', 'Total Questions', 'Percentage', 'Status', 'Violations', 'Submitted At'])
             for r in query:
-                ws.append([
-                    r.candidate_name,
-                    r.email,
-                    r.hall_ticket,
+                cw.writerow([
+                    r.candidate.full_name if r.candidate else 'N/A',
+                    r.candidate.email if r.candidate else 'N/A',
+                    r.candidate.hall_ticket if r.candidate else 'N/A',
+                    r.assessment.title if r.assessment else 'Round 2 FIB',
                     r.score,
                     r.total_questions,
                     f"{r.percentage:.1f}%",
                     r.status.upper(),
+                    r.violations,
                     r.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if r.submitted_at else 'N/A'
                 ])
             output = make_response(si.getvalue())
@@ -710,3 +758,41 @@ def export_tech_round_2_reports(format_type):
             return output
 
     return redirect(url_for('admin.report_tech_round_2'))
+
+
+@admin_bp.route('/api/submissions/<int:submission_id>/fib-details')
+@login_required
+def api_submission_fib_details(submission_id):
+    submission = Submission.query.get_or_404(submission_id)
+    questions = Question.query.filter_by(assessment_id=submission.assessment_id).order_by(Question.id).all()
+    answers = {a.question_id: a.selected_option for a in submission.answers}
+
+    detail_list = []
+    for idx, q in enumerate(questions, 1):
+        user_ans = (answers.get(q.id) or '').strip()
+        expected = (q.correct_answer or '').strip()
+        expected_list = [ans.strip().lower() for ans in expected.split('|')]
+        if len(expected_list) == 1 and ',' in expected:
+            expected_list = [ans.strip().lower() for ans in expected.split(',')]
+
+        is_correct = (user_ans.lower() in expected_list) if user_ans else False
+        detail_list.append({
+            'num': idx,
+            'question': q.question,
+            'user_answer': user_ans or '[BLANK / UNANSWERED]',
+            'expected_answer': expected,
+            'is_correct': is_correct
+        })
+
+    return jsonify({
+        'submission_id': submission.id,
+        'candidate_name': submission.candidate.full_name if submission.candidate else 'Unknown',
+        'hall_ticket': submission.candidate.hall_ticket if submission.candidate else 'N/A',
+        'assessment_title': submission.assessment.title if submission.assessment else 'Technical Round 2',
+        'score': submission.score,
+        'total': submission.total_questions,
+        'percentage': submission.percentage,
+        'status': submission.status,
+        'violations': submission.violations,
+        'questions': detail_list
+    })

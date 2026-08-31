@@ -564,11 +564,11 @@
       </div>
     </div>
 
-    <!-- ── ROUND 2: TECHNICAL LIVE CODING (MONACO SANDBOX) ── -->
+    <!-- ── ROUND 2: TECHNICAL EVALUATION (FILL IN THE BLANKS) ── -->
     <div class="round-card round-card-r2">
       <div>
         <div class="round-header">
-          <span class="round-step-tag tag-r2">Round 2 — Live Coding</span>
+          <span class="round-step-tag tag-r2">Round 2 — Technical Evaluation (FIB)</span>
           {% if sub_round2 %}
             {% if sub_round2.status == 'pass' %}
               <span class="round-status-pill status-passed">✓ PASSED</span>
@@ -582,14 +582,14 @@
           {% endif %}
         </div>
 
-        <h3 class="round-card-title">Technical Live Coding Sandbox</h3>
-        <p class="round-card-desc">Hands-on algorithmic programming &amp; problem solving in an in-browser VS Code / Monaco IDE.</p>
+        <h3 class="round-card-title">Technical Fill In The Blanks Round</h3>
+        <p class="round-card-desc">Advanced core domain evaluation testing precise syntax, architecture, protocols, internals, and edge cases.</p>
 
         <div class="spec-chips-list">
-          <span class="spec-chip">⏱️ 45 Minutes</span>
-          <span class="spec-chip">💻 2 Coding Challenges</span>
-          <span class="spec-chip">⚡ Python / JS / Java / C++</span>
-          <span class="spec-chip">🧪 Automated Testcases</span>
+          <span class="spec-chip">⏱️ 20 Minutes</span>
+          <span class="spec-chip">✍️ 20 FIB Questions</span>
+          <span class="spec-chip">🎯 75% Pass Cutoff</span>
+          <span class="spec-chip">🛡️ Screenshare &amp; Anti-Cheat</span>
         </div>
       </div>
 
@@ -597,8 +597,8 @@
         {% if sub_round2 %}
           <div class="scorecard-mini">
             <div class="sc-row">
-              <span class="sc-label">Coding Score:</span>
-              <span class="sc-val" style="color: #c084fc;">{{ sub_round2.coding_score or 0 }} Pts</span>
+              <span class="sc-label">FIB Score:</span>
+              <span class="sc-val" style="color: #c084fc;">{{ sub_round2.score }} / {{ sub_round2.total_questions }}</span>
             </div>
             <div class="sc-row">
               <span class="sc-label">Percentage:</span>
@@ -617,17 +617,32 @@
         {% elif in_prog_round2 %}
           <form method="POST" action="{{ url_for('assessment.start') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="assessment_id" value="4"/>
+            <input type="hidden" name="assessment_id" value="{{ in_prog_round2.assessment_id }}"/>
             <button type="submit" class="btn-launch-r2" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-              ▶️ Resume Live Coding Sandbox
+              ▶️ Resume Round 2 Assessment
             </button>
           </form>
         {% else %}
           <form method="POST" action="{{ url_for('assessment.start') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="assessment_id" value="4"/>
+            <div style="margin-bottom: 12px; text-align: left;">
+              <label style="font-size: 11.5px; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block;">Select Round 2 Domain Track:</label>
+              <select name="assessment_id" class="track-select-box" style="border-color: rgba(139, 92, 246, 0.3);">
+                {% if round2_assessments %}
+                  {% for a in round2_assessments %}
+                    <option value="{{ a.id }}">{{ a.title }} ({{ a.duration }} Mins)</option>
+                  {% endfor %}
+                {% else %}
+                  <option value="14">Technical Round 2 - Python Developer (20 Mins)</option>
+                  <option value="15">Technical Round 2 - Java Developer (20 Mins)</option>
+                  <option value="16">Technical Round 2 - Cyber Security (20 Mins)</option>
+                  <option value="17">Technical Round 2 - Data Analyst (20 Mins)</option>
+                  <option value="18">Technical Round 2 - .NET Developer (20 Mins)</option>
+                {% endif %}
+              </select>
+            </div>
             <button type="submit" class="btn-launch-r2">
-              💻 Start Round 2 Live Coding Round
+              ✍️ Start Round 2 (Fill in the Blanks)
             </button>
           </form>
         {% endif %}

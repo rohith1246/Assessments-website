@@ -223,11 +223,17 @@ def save_answer():
             except (ValueError, TypeError):
                 continue
 
-            if selected_option in ('A', 'B', 'C', 'D', None):
+            if selected_option is None:
                 records.append({
                     'submission_id': submission_id,
                     'question_id': question_id,
-                    'selected_option': selected_option
+                    'selected_option': None
+                })
+            elif isinstance(selected_option, str):
+                records.append({
+                    'submission_id': submission_id,
+                    'question_id': question_id,
+                    'selected_option': selected_option.strip()[:500]
                 })
 
         if records:
@@ -487,13 +493,26 @@ def submit():
         submission.status = status
         submission.submitted_at = datetime.utcnow()
     else:
-        # Round 1: Online MCQ Assessment ONLY
+        # Evaluation (MCQ & FIB)
         questions = _get_cached_questions(submission.assessment_id)
         answer_map = {a.question_id: a.selected_option for a in submission.answers}
-        correct = sum(
-            1 for q in questions
-            if answer_map.get(q.id) == q.correct_answer
-        )
+        
+        correct = 0
+        for q in questions:
+            user_ans = (answer_map.get(q.id) or '').strip()
+            if not user_ans:
+                continue
+            
+            if (q.question_type or 'mcq') == 'fib':
+                expected_list = [ans.strip().lower() for ans in (q.correct_answer or '').split('|')]
+                if len(expected_list) == 1 and ',' in q.correct_answer:
+                    expected_list = [ans.strip().lower() for ans in q.correct_answer.split(',')]
+                if user_ans.lower() in expected_list:
+                    correct += 1
+            else:
+                if user_ans.upper() == (q.correct_answer or '').strip().upper():
+                    correct += 1
+
         total = len(questions)
         percentage = round((correct / total * 100), 2) if total > 0 else 0.0
         status = 'pass' if percentage >= pass_pct else 'fail'
@@ -539,15 +558,27 @@ def result(submission_id):
             flash('Unauthorized access.', 'danger')
             return redirect(url_for('candidate.register'))
 
-    is_coding_round = (submission.assessment_id == 4 or 'Coding' in (submission.assessment.title or '') or 'Round 2' in (submission.assessment.title or ''))
+    is_coding_round = (submission.assessment_id == 4 or 'Coding' in (submission.assessment.title or '') or 'Sandbox' in (submission.assessment.title or ''))
     questions = _get_cached_questions(submission.assessment_id) if not is_coding_round else []
     answers = {a.question_id: a.selected_option for a in submission.answers}
 
-    wrong = sum(
-        1 for q in questions
-        if q.id in answers and answers[q.id] and answers[q.id] != q.correct_answer
-    )
-    unanswered = sum(1 for q in questions if not answers.get(q.id))
+    wrong = 0
+    unanswered = 0
+    for q in questions:
+        user_ans = (answers.get(q.id) or '').strip()
+        if not user_ans:
+            unanswered += 1
+            continue
+        
+        if (q.question_type or 'mcq') == 'fib':
+            expected_list = [ans.strip().lower() for ans in (q.correct_answer or '').split('|')]
+            if len(expected_list) == 1 and ',' in q.correct_answer:
+                expected_list = [ans.strip().lower() for ans in q.correct_answer.split(',')]
+            if user_ans.lower() not in expected_list:
+                wrong += 1
+        else:
+            if user_ans.upper() != (q.correct_answer or '').strip().upper():
+                wrong += 1
 
     return render_template(
         'candidate/result.html',

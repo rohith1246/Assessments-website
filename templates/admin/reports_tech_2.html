@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Technical Round 2 Reports — Admin Portal{% endblock %}
+{% block title %}Technical Round 2 (FIB) Results — Admin Portal{% endblock %}
 {% block body_class %}admin-page{% endblock %}
 
 {% block body %}
@@ -7,10 +7,10 @@
   .tech2-header-card {
     background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
     border-radius: 16px;
-    padding: 32px;
+    padding: 28px 32px;
     color: #ffffff;
     box-shadow: 0 10px 25px -5px rgba(67, 56, 202, 0.4);
-    margin-bottom: 28px;
+    margin-bottom: 24px;
   }
   .tech2-badge-tag {
     background: rgba(165, 180, 252, 0.2);
@@ -23,41 +23,13 @@
     border-radius: 50px;
     text-transform: uppercase;
   }
-  .btn-export-csv {
-    background: #ffffff;
-    color: #312e81;
-    border: 1px solid #c7d2fe;
-    font-weight: 700;
-    padding: 10px 20px;
-    border-radius: 10px;
-    transition: all 0.2s ease;
-  }
-  .btn-export-csv:hover {
-    background: #e0e7ff;
-    color: #1e1b4b;
-    transform: translateY(-2px);
-  }
-  .btn-export-excel {
-    background: #10b981;
-    color: #ffffff;
-    border: none;
-    font-weight: 700;
-    padding: 10px 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    transition: all 0.2s ease;
-  }
-  .btn-export-excel:hover {
-    background: #059669;
-    color: #ffffff;
-    transform: translateY(-2px);
-  }
   .tech2-table-card {
-    background: #ffffff;
+    background: var(--bg-primary, #ffffff);
     border-radius: 16px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color, #e2e8f0);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     overflow: hidden;
+    margin-bottom: 30px;
   }
   .tech2-table th {
     background: #0f172a;
@@ -67,41 +39,65 @@
     letter-spacing: 0.5px;
     font-weight: 700;
     border: none;
-    padding: 16px 20px;
+    padding: 14px 18px;
   }
   .tech2-table td {
-    padding: 16px 20px;
-    font-size: 14px;
-    color: #334155;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 14px 18px;
+    font-size: 13.5px;
+    color: var(--text-primary, #334155);
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
   }
   .tech2-table tr:hover td {
-    background: #f8fafc;
+    background: rgba(139, 92, 246, 0.03);
   }
   .status-badge-pass {
     background: rgba(16, 185, 129, 0.12);
     color: #059669;
     border: 1px solid rgba(16, 185, 129, 0.3);
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 700;
-    padding: 6px 14px;
+    padding: 4px 12px;
     border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
   .status-badge-fail {
     background: rgba(239, 68, 68, 0.12);
     color: #dc2626;
     border: 1px solid rgba(239, 68, 68, 0.3);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-inspect-fib {
+    background: rgba(139, 92, 246, 0.12);
+    color: #7c3aed;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 5px 12px;
+    border-radius: 8px;
     font-size: 12px;
     font-weight: 700;
-    padding: 6px 14px;
-    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-inspect-fib:hover {
+    background: #7c3aed;
+    color: #ffffff;
   }
   .btn-delete-row {
     background: transparent;
     color: #ef4444;
     border: 1px solid rgba(239, 68, 68, 0.3);
-    padding: 4px 10px;
-    border-radius: 6px;
+    padding: 5px 10px;
+    border-radius: 8px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -110,6 +106,62 @@
   .btn-delete-row:hover {
     background: #ef4444;
     color: #ffffff;
+  }
+
+  /* Modal Styling */
+  .fib-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+  }
+  .fib-modal-card {
+    background: #0f172a;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 900px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    color: #f8fafc;
+    overflow: hidden;
+  }
+  .fib-modal-header {
+    padding: 20px 28px;
+    background: #1e1b4b;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .fib-modal-body {
+    padding: 24px 28px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .fib-q-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+  .fib-q-card.q-correct {
+    border-left: 4px solid #10b981;
+  }
+  .fib-q-card.q-incorrect {
+    border-left: 4px solid #ef4444;
+  }
+  .fib-q-card.q-unans {
+    border-left: 4px solid #f59e0b;
   }
 </style>
 
@@ -132,15 +184,15 @@
       </a>
       <a href="{{ url_for('admin.results') }}" class="nav-pill-item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        Results
-      </a>
-      <a href="{{ url_for('admin.daily_reports') }}" class="nav-pill-item">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Daily Reports
+        Round 1 (MCQ) Results
       </a>
       <a href="{{ url_for('admin.report_tech_round_2') }}" class="nav-pill-item active">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Technical Round 2 Reports
+        Round 2 (FIB) Results
+      </a>
+      <a href="{{ url_for('admin.daily_reports') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+        Daily Reports
       </a>
     </nav>
 
@@ -155,25 +207,55 @@
     <!-- Header Gradient Banner -->
     <div class="tech2-header-card d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div>
-        <span class="tech2-badge-tag mb-2 d-inline-block">Stage 2 — Technical Evaluation</span>
-        <h2 class="fw-bold text-white mb-1" style="font-size: 28px;">Technical Round 2 Scorecards</h2>
-        <p class="mb-0" style="color: #cbd5e1; font-size: 14px;">Dedicated evaluation results for Core Java, Core Python & Core SQL Assessment (20 Mins | 20 Questions | 50% Pass Threshold)</p>
+        <span class="tech2-badge-tag mb-2 d-inline-block">Stage 2 — Technical Evaluation (FIB)</span>
+        <h2 class="fw-bold text-white mb-1" style="font-size: 26px;">Technical Round 2 Results &amp; Answer Review</h2>
+        <p class="mb-0" style="color: #cbd5e1; font-size: 13.5px;">Candidate submissions for Fill In The Blanks assessments (20 Questions | 20 Mins | 75% Cutoff | Strict 1-Tab Switch)</p>
       </div>
 
       <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ url_for('admin.export_tech_round_2_reports', format_type='xlsx', status='pass') }}" class="btn btn-success fw-bold px-3 py-2" style="background: #10b981; border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-          🟢 Export Passed Excel
+        <a href="{{ url_for('admin.export_tech_round_2_reports', format_type='xlsx', status='pass', track=selected_track) }}" class="btn btn-success fw-bold px-3 py-2" style="background: #10b981; border: none; border-radius: 10px;">
+          🟢 Export Passed (Excel)
         </a>
-        <a href="{{ url_for('admin.export_tech_round_2_reports', format_type='xlsx', status='fail') }}" class="btn btn-danger fw-bold px-3 py-2" style="background: #ef4444; border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">
-          🔴 Export Failed Excel
+        <a href="{{ url_for('admin.export_tech_round_2_reports', format_type='xlsx', status='fail', track=selected_track) }}" class="btn btn-danger fw-bold px-3 py-2" style="background: #ef4444; border: none; border-radius: 10px;">
+          🔴 Export Failed (Excel)
         </a>
-        <a href="{{ url_for('admin.export_tech_round_2_reports', format_type='xlsx') }}" class="btn btn-primary fw-bold px-3 py-2" style="background: #4338ca; border: none; border-radius: 10px;">
+        <a href="{{ url_for('admin.export_tech_round_2_reports', format_type='xlsx', track=selected_track) }}" class="btn btn-primary fw-bold px-3 py-2" style="background: #4338ca; border: none; border-radius: 10px;">
           📊 Export All (Excel)
         </a>
-        <a href="{{ url_for('admin.export_tech_round_2_reports', format_type='csv') }}" class="btn btn-outline-light fw-bold px-3 py-2" style="border-radius: 10px; border-color: rgba(255,255,255,0.4); color: #fff;">
+        <a href="{{ url_for('admin.export_tech_round_2_reports', format_type='csv', track=selected_track) }}" class="btn btn-outline-light fw-bold px-3 py-2" style="border-radius: 10px; border-color: rgba(255,255,255,0.4); color: #fff;">
           📄 Export All (CSV)
         </a>
       </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div style="display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 20px;">
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.report_tech_round_2', status='all', track=selected_track, search=search) }}" class="btn {% if status == 'all' or not status %}btn-primary{% else %}btn-ghost{% endif %}" style="padding: 6px 14px; font-size: 13px;">
+          All Status
+        </a>
+        <a href="{{ url_for('admin.report_tech_round_2', status='pass', track=selected_track, search=search) }}" class="btn {% if status == 'pass' %}btn-success{% else %}btn-ghost{% endif %}" style="padding: 6px 14px; font-size: 13px;">
+          ✓ Passed
+        </a>
+        <a href="{{ url_for('admin.report_tech_round_2', status='fail', track=selected_track, search=search) }}" class="btn {% if status == 'fail' %}btn-danger{% else %}btn-ghost{% endif %}" style="padding: 6px 14px; font-size: 13px;">
+          ✕ Failed
+        </a>
+      </div>
+
+      <form method="GET" action="{{ url_for('admin.report_tech_round_2') }}" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0;">
+        <input type="hidden" name="status" value="{{ status }}"/>
+        <select name="track" onchange="this.form.submit()" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; color: #1e293b; outline: none; cursor: pointer;">
+          <option value="">All Domain Tracks</option>
+          {% for t in round2_assessments %}
+          <option value="{{ t.id }}" {% if selected_track == t.id %}selected{% endif %}>{{ t.title }}</option>
+          {% endfor %}
+        </select>
+
+        <div style="position: relative; width: 260px;">
+          <input type="text" name="search" value="{{ search }}" placeholder="Search candidate / hall ticket..." style="width: 100%; padding: 8px 14px; font-size: 13px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;"/>
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;">Search</button>
+      </form>
     </div>
 
     <!-- Scorecards Table Card -->
@@ -182,45 +264,74 @@
         <table class="table tech2-table align-middle mb-0">
           <thead>
             <tr>
-              <th class="ps-4">Candidate Name</th>
-              <th>Email Address</th>
+              <th class="ps-4">Candidate</th>
               <th>Hall Ticket</th>
-              <th>Score</th>
-              <th>Percentage</th>
-              <th>Result Status</th>
-              <th>Submission Time</th>
+              <th>Track / Assessment</th>
+              <th class="text-center">Score</th>
+              <th class="text-center">Percentage</th>
+              <th class="text-center">Violations</th>
+              <th class="text-center">Status</th>
+              <th>Submitted Time (IST)</th>
+              <th class="pe-4 text-center">Review Answers</th>
               <th class="pe-4 text-center">Action</th>
             </tr>
           </thead>
           <tbody>
             {% for r in reports %}
             <tr>
-              <td class="ps-4 fw-bold text-dark">{{ r.candidate_name }}</td>
-              <td style="color: #475569;">{{ r.email }}</td>
-              <td><code style="background: #f1f5f9; color: #4338ca; padding: 4px 10px; border-radius: 6px; font-weight: 600;">{{ r.hall_ticket }}</code></td>
-              <td class="fw-bold text-dark">{{ r.score }} / {{ r.total_questions }}</td>
-              <td><strong style="color: #0f172a; font-size: 15px;">{{ "%.1f"|format(r.percentage) }}%</strong></td>
+              <td class="ps-4">
+                <div style="font-weight: 700; color: #0f172a;">{{ r.candidate.full_name }}</div>
+                <div style="font-size: 12px; color: #64748b;">{{ r.candidate.email }}</div>
+              </td>
               <td>
-                {% if r.status == 'pass' %}
-                  <span class="status-badge-pass">✔ PASSED</span>
+                <code style="background: #f1f5f9; color: #4338ca; padding: 4px 10px; border-radius: 6px; font-weight: 700;">{{ r.candidate.hall_ticket }}</code>
+              </td>
+              <td style="font-size: 13px; font-weight: 600; color: #475569;">
+                {{ r.assessment.title }}
+              </td>
+              <td class="text-center fw-bold" style="font-size: 14px;">
+                {{ r.score }} / {{ r.total_questions }}
+              </td>
+              <td class="text-center">
+                <strong style="color: {% if r.status == 'pass' %}#059669{% else %}#dc2626{% endif %}; font-size: 14px;">
+                  {{ "%.1f"|format(r.percentage) }}%
+                </strong>
+              </td>
+              <td class="text-center">
+                {% if r.violations > 0 %}
+                <span style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700; padding: 3px 8px; border-radius: 12px; font-size: 12px;">⚠ {{ r.violations }}</span>
                 {% else %}
-                  <span class="status-badge-fail">✖ FAILED</span>
+                <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-muted small">{{ r.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if r.submitted_at else 'N/A' }}</td>
+              <td class="text-center">
+                {% if r.status == 'pass' %}
+                  <span class="status-badge-pass">✓ PASSED</span>
+                {% else %}
+                  <span class="status-badge-fail">✕ FAILED</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">
+                {{ r.submitted_at_ist.strftime('%d %b %Y, %I:%M %p') if r.submitted_at_ist else '—' }}
+              </td>
+              <td class="text-center">
+                <button type="button" class="btn-inspect-fib" onclick="openFibModal({{ r.id }})">
+                  🔍 Inspect Answers
+                </button>
+              </td>
               <td class="pe-4 text-center">
-                <button type="button" class="btn-delete-row" onclick="confirmDeleteTech2({{ r.submission_id }}, '{{ r.candidate_name|replace("'", "\\'") }}')">
+                <button type="button" class="btn-delete-row" onclick="confirmDeleteTech2({{ r.id }}, '{{ r.candidate.full_name|replace("'", "\\'") }}')">
                   🗑️ Delete
                 </button>
               </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="8" class="text-center py-5 text-muted">
+              <td colspan="10" class="text-center py-5 text-muted">
                 <div class="py-4">
-                  <div style="font-size: 36px; margin-bottom: 8px;">📊</div>
-                  <p class="h5 fw-bold text-dark mb-1">No Technical Round 2 Submissions Yet</p>
-                  <p class="small text-muted mb-0">Candidate results will automatically appear here as soon as candidates finish Round 2.</p>
+                  <div style="font-size: 36px; margin-bottom: 8px;">📝</div>
+                  <div style="font-size: 16px; font-weight: 600; color: #64748b;">No Technical Round 2 submissions found</div>
+                  <p class="text-muted small mb-0">When candidates complete Round 2 (Fill In The Blanks), their scorecards and answers will show here.</p>
                 </div>
               </td>
             </tr>
@@ -230,21 +341,115 @@
       </div>
     </div>
 
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.report_tech_round_2', page=pagination.prev_num, track=selected_track, status=status, search=search) }}" class="btn btn-ghost">← Prev</a>
+      {% endif %}
+      <span style="font-size: 13px; font-weight: 600; color: #64748b; align-self: center;">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+      {% if pagination.has_next %}
+      <a href="{{ url_for('admin.report_tech_round_2', page=pagination.next_num, track=selected_track, status=status, search=search) }}" class="btn btn-ghost">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
   </main>
 </div>
 
-<!-- Single Delete Hidden Form -->
-<form id="tech2DeleteForm" method="POST" action="" style="display: none;">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-</form>
+<!-- FIB Question-by-Question Inspection Modal -->
+<div class="fib-modal-overlay" id="fibModalOverlay" onclick="if(event.target===this) closeFibModal();">
+  <div class="fib-modal-card">
+    <div class="fib-modal-header">
+      <div>
+        <h4 style="margin: 0; font-size: 18px; font-weight: 800; color: #fff;" id="mCandName">Candidate Answers Review</h4>
+        <div style="font-size: 12.5px; color: #a78bfa; margin-top: 2px;" id="mTrackInfo">Technical Round 2 (Fill in the blanks)</div>
+      </div>
+      <button onclick="closeFibModal()" style="background: rgba(255,255,255,0.1); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;">✕</button>
+    </div>
+
+    <div class="fib-modal-body" id="fibModalBody">
+      <div style="text-align: center; padding: 40px; color: #94a3b8;">Loading answers breakdown...</div>
+    </div>
+  </div>
+</div>
 
 <script>
-  function confirmDeleteTech2(submissionId, candidateName) {
-    if (confirm(`Are you sure you want to delete the Technical Round 2 assessment record for ${candidateName}?`)) {
-      const form = document.getElementById('tech2DeleteForm');
-      form.action = `/admin/submissions/${submissionId}/delete`;
-      form.submit();
-    }
+async function openFibModal(subId) {
+  const modal = document.getElementById('fibModalOverlay');
+  const body = document.getElementById('fibModalBody');
+  const candNameEl = document.getElementById('mCandName');
+  const trackInfoEl = document.getElementById('mTrackInfo');
+  
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">Loading answers breakdown...</div>';
+
+  try {
+    const res = await fetch(`/admin/api/submissions/${subId}/fib-details`);
+    const data = await res.json();
+    
+    candNameEl.textContent = `${data.candidate_name} (${data.hall_ticket})`;
+    trackInfoEl.textContent = `${data.assessment_title} • Score: ${data.score}/${data.total} (${data.percentage.toFixed(1)}%) • Violations: ${data.violations}`;
+
+    let html = '';
+    data.questions.forEach(q => {
+      const cardClass = q.is_correct ? 'q-correct' : (q.user_answer === '[BLANK / UNANSWERED]' ? 'q-unans' : 'q-incorrect');
+      const badgeText = q.is_correct ? '✓ CORRECT (+1)' : (q.user_answer === '[BLANK / UNANSWERED]' ? '⚪ UNANSWERED (0)' : '✕ INCORRECT (0)');
+      const badgeColor = q.is_correct ? '#10b981' : (q.user_answer === '[BLANK / UNANSWERED]' ? '#f59e0b' : '#ef4444');
+
+      html += `
+        <div class="fib-q-card ${cardClass}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 700; font-size: 13px; color: #94a3b8;">Question ${q.num}</span>
+            <span style="font-weight: 800; font-size: 11.5px; color: ${badgeColor};">${badgeText}</span>
+          </div>
+          <div style="font-size: 14.5px; font-weight: 600; color: #f8fafc; line-height: 1.6; margin-bottom: 12px; font-family: monospace;">
+            ${escapeHtml(q.question)}
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: rgba(15, 23, 42, 0.6); padding: 12px; border-radius: 8px;">
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Candidate's Typed Answer:</div>
+              <code style="font-size: 13px; font-weight: 700; color: ${q.is_correct ? '#34d399' : '#f87171'};">${escapeHtml(q.user_answer)}</code>
+            </div>
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Expected Answer Key:</div>
+              <code style="font-size: 13px; font-weight: 700; color: #a78bfa;">${escapeHtml(q.expected_answer)}</code>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    body.innerHTML = html;
+  } catch (err) {
+    body.innerHTML = '<div style="text-align: center; padding: 40px; color: #ef4444;">Failed to load submission details.</div>';
   }
+}
+
+function closeFibModal() {
+  document.getElementById('fibModalOverlay').style.display = 'none';
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function confirmDeleteTech2(subId, name) {
+  if (confirm(`Are you sure you want to permanently delete the Round 2 assessment submission for "${name}" (ID #${subId})?`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/submissions/${subId}/delete`;
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = '{{ csrf_token() }}';
+    form.appendChild(csrfInput);
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
 </script>
 {% endblock %}

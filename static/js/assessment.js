@@ -156,17 +156,78 @@ async function requestScreenshare() {
   }
 }
 
-// ── Anti-Cheat ───────────────────────────────────────────────
+// ── Anti-Cheat & Anti-Extension Shield ───────────────────────
 function setupAntiCheatListeners() {
-  // Use visibilitychange to detect true tab switches & minimizing (avoids false blur triggers)
+  // 1. Tab switches & minimizing
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && antiCheatActive && !isSubmitting) {
       recordViolation('tab_switch');
     }
   });
 
-  // Prevent right-click inspection during test
-  document.addEventListener('contextmenu', e => e.preventDefault());
+  window.addEventListener('blur', () => {
+    if (antiCheatActive && !isSubmitting) {
+      recordViolation('window_blur');
+    }
+  });
+
+  // 2. Prevent right-click context menu
+  document.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    return false;
+  });
+
+  // 3. Block copy, cut, paste, drag & drop
+  ['copy', 'cut', 'paste', 'dragstart', 'drop'].forEach(evt => {
+    document.addEventListener(evt, e => {
+      e.preventDefault();
+      return false;
+    });
+  });
+
+  // 4. Block Developer Tools & Common Extension Shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || e.keyCode === 123 || e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+      e.preventDefault();
+      return false;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      const key = (e.key || '').toLowerCase();
+      if (['c', 'v', 'x', 'a', 'u', 's', 'p', 'j'].includes(key) || (e.shiftKey && ['i', 'j', 'c', 'k', 'm'].includes(key))) {
+        e.preventDefault();
+        return false;
+      }
+    }
+    if (e.altKey || e.key === 'Meta') {
+      recordViolation('system_key_switch');
+    }
+  });
+
+  // 5. Anti-AI Extension DOM Scanner
+  setInterval(() => {
+    if (!antiCheatActive) return;
+    const suspiciousSelectors = [
+      '[id*="chatgpt" i]', '[class*="chatgpt" i]',
+      '[id*="copilot" i]', '[class*="copilot" i]',
+      '[id*="merlin" i]', '[class*="merlin" i]',
+      '[id*="sider" i]', '[class*="sider" i]',
+      '[id*="monica" i]', '[class*="monica" i]',
+      '[id*="harpa" i]', '[class*="harpa" i]',
+      '[id*="grammarly" i]', '[class*="grammarly" i]',
+      '[id*="ai-assistant" i]', '[class*="ai-assistant" i]'
+    ];
+    suspiciousSelectors.forEach(sel => {
+      try {
+        const found = document.querySelectorAll(sel);
+        found.forEach(el => {
+          if (!el.closest('.exam-layout') && !el.closest('.violation-overlay')) {
+            el.style.display = 'none';
+            el.remove();
+          }
+        });
+      } catch (err) {}
+    });
+  }, 1500);
 }
 
 async function recordViolation(reason) {
@@ -199,7 +260,7 @@ async function recordViolation(reason) {
   } catch (err) {}
 
   if (violations >= 1) {
-    autoSubmit('Tab switch detected (Strict Single-Violation Policy)');
+    autoSubmit('Tab switch or external window switch detected');
   } else {
     showViolationModal(violations);
   }
@@ -250,40 +311,36 @@ function updateTimerDisplay(sec) {
   const wrap = document.getElementById('timerWrapper');
   if (el) el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   if (wrap) {
-    if (sec < 300) wrap.classList.add('timer-danger');
-    else wrap.classList.remove('timer-danger');
+    if (sec <= 120) wrap.className = 'timer-wrapper timer-danger';
+    else if (sec <= 300) wrap.className = 'timer-wrapper timer-warning';
+    else wrap.className = 'timer-wrapper';
   }
 }
 
-// ── SECTION SWITCHING (MCQ vs CODING) ─────────────────────────
-function switchMainSection(sec) {
-  currentMainSection = sec;
-  const btnMcq = document.getElementById('btnSecMcq');
-  const btnCoding = document.getElementById('btnSecCoding');
-  const mcqBody = document.getElementById('mcqExamBody');
-  const codingSection = document.getElementById('codingSection');
-
-  if (btnMcq) btnMcq.classList.toggle('active', sec === 'mcq');
-  if (btnCoding) btnCoding.classList.toggle('active', sec === 'coding');
-
-  if (sec === 'mcq') {
-    if (mcqBody) mcqBody.style.display = 'grid';
-    if (codingSection) codingSection.style.display = 'none';
-  } else {
-    if (mcqBody) mcqBody.style.display = 'none';
-    if (codingSection) codingSection.style.display = 'grid';
-    setTimeout(() => {
-      if (monacoEditorInstance) monacoEditorInstance.layout();
-    }, 100);
-  }
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-// ── MCQ NAVIGATION & RENDERING ────────────────────────────────
+function formatQuestionText(text) {
+  if (!text) return '';
+  let formatted = escapeHtml(text)
+    .replace(/_____+/g, '<span class="fib-blank-box">&nbsp;&nbsp;_____&nbsp;&nbsp;</span>')
+    .replace(/\n\n/g, '<br/><br/>')
+    .replace(/\n/g, '<br/>');
+  return formatted;
+}
+
+// ── QUESTION NAVIGATION & RENDERING (MCQ & FIB) ───────────────
 function renderQuestion(idx) {
   if (!QUESTIONS || idx < 0 || idx >= QUESTIONS.length) return;
   currentQuestion = idx;
 
   const q = QUESTIONS[idx];
+  const isFIB = (q.question_type === 'fib' || (!q.options || q.options.length === 0));
   const qProgress = document.getElementById('currentQNum');
   const progressFill = document.getElementById('progressFill');
   if (qProgress) qProgress.textContent = idx + 1;
@@ -292,25 +349,63 @@ function renderQuestion(idx) {
   const container = document.getElementById('questionContent');
   if (!container) return;
 
-  const savedOpt = answers[q.id] || null;
+  const savedOpt = answers[q.id] || '';
 
-  let optsHtml = '';
-  q.options.forEach(opt => {
-    const isSelected = (savedOpt === opt.key);
-    optsHtml += `
-      <div class="opt-item ${isSelected ? 'opt-selected' : ''}" onclick="selectOption(${q.id}, '${opt.key}')">
-        <div class="opt-key-circle">${opt.key}</div>
-        <div class="opt-text">${opt.text}</div>
+  let bodyHtml = '';
+  if (isFIB) {
+    bodyHtml = `
+      <div class="fib-question-box">
+        <div class="fib-tag">✍️ Fill In The Blank (Technical Question ${idx + 1})</div>
+        <div class="fib-prompt-text">${formatQuestionText(q.question)}</div>
+        <div class="fib-input-container">
+          <label class="fib-input-label">Type your answer:</label>
+          <div class="fib-input-wrapper">
+            <input type="text"
+                   class="fib-field-input"
+                   id="fibInput_${q.id}"
+                   value="${escapeHtml(savedOpt)}"
+                   placeholder="Type exact keyword, syntax, command, or value..."
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   data-gramm="false"
+                   oninput="onFibInput(${q.id}, this.value)"
+            />
+          </div>
+          <div class="fib-guidance">
+            <span>⚡ Note: Type only the missing keyword or value. Matching is verified accurately.</span>
+          </div>
+        </div>
       </div>
     `;
-  });
+  } else {
+    let optsHtml = '';
+    (q.options || []).forEach(opt => {
+      const isSelected = (savedOpt === opt.key);
+      optsHtml += `
+        <div class="opt-item ${isSelected ? 'opt-selected' : ''}" onclick="selectOption(${q.id}, '${opt.key}')">
+          <div class="opt-key-circle">${opt.key}</div>
+          <div class="opt-text">${opt.text}</div>
+        </div>
+      `;
+    });
+    bodyHtml = `
+      <div class="q-card-wrapper">
+        <div class="q-title-text">${formatQuestionText(q.question)}</div>
+        <div class="options-list">${optsHtml}</div>
+      </div>
+    `;
+  }
 
-  container.innerHTML = `
-    <div class="q-card-wrapper">
-      <div class="q-title-text">${q.question}</div>
-      <div class="options-list">${optsHtml}</div>
-    </div>
-  `;
+  container.innerHTML = bodyHtml;
+
+  if (isFIB) {
+    const inputEl = document.getElementById(`fibInput_${q.id}`);
+    if (inputEl) {
+      setTimeout(() => inputEl.focus(), 50);
+    }
+  }
 
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
@@ -341,6 +436,13 @@ function selectOption(qId, key) {
   localStorage.setItem(LS_KEY_ANSWERS, JSON.stringify(answers));
   renderQuestion(currentQuestion);
   saveAnswerDebounced(qId, key);
+}
+
+function onFibInput(qId, val) {
+  answers[qId] = val.trim();
+  localStorage.setItem(LS_KEY_ANSWERS, JSON.stringify(answers));
+  updateNavGrid();
+  saveAnswerDebounced(qId, val.trim());
 }
 
 function saveAnswerDebounced(qId, key) {

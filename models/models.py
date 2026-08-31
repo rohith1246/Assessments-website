@@ -130,12 +130,13 @@ class Question(db.Model):
         db.Integer, db.ForeignKey('assessment_drives.id', ondelete='CASCADE'),
         nullable=False, index=True
     )
+    question_type = db.Column(db.String(20), default='mcq', nullable=False)  # mcq | fib
     question = db.Column(db.Text, nullable=False)
-    option_a = db.Column(db.Text, nullable=False)
-    option_b = db.Column(db.Text, nullable=False)
-    option_c = db.Column(db.Text, nullable=False)
-    option_d = db.Column(db.Text, nullable=False)
-    correct_answer = db.Column(db.String(1), nullable=False)  # A | B | C | D
+    option_a = db.Column(db.Text, nullable=True)
+    option_b = db.Column(db.Text, nullable=True)
+    option_c = db.Column(db.Text, nullable=True)
+    option_d = db.Column(db.Text, nullable=True)
+    correct_answer = db.Column(db.Text, nullable=False)  # A | B | C | D or exact keyword/string for FIB
 
     # Relationships
     answers = db.relationship(
@@ -149,6 +150,7 @@ class Question(db.Model):
         data = {
             'id': self.id,
             'assessment_id': self.assessment_id,
+            'question_type': self.question_type or 'mcq',
             'question': clean_q,
             'option_a': self.option_a,
             'option_b': self.option_b,
@@ -241,7 +243,7 @@ class Answer(db.Model):
         db.Integer, db.ForeignKey('assessment_questions.id', ondelete='CASCADE'),
         nullable=False, index=True
     )
-    selected_option = db.Column(db.String(1), nullable=True)  # A | B | C | D | None
+    selected_option = db.Column(db.Text, nullable=True)  # A | B | C | D | text string for FIB | None
 
     # Each question can only have one answer per submission
     __table_args__ = (
