@@ -136,13 +136,18 @@ def dashboard():
 
     user_submissions = Submission.query.filter_by(candidate_id=candidate_id).all()
 
-    sub_round1 = next((s for s in user_submissions if s.assessment_id in (1, 2, 3) and s.status != 'in_progress'), None)
+    sub_round1 = next((s for s in user_submissions if s.assessment_id != 4 and s.status != 'in_progress'), None)
     sub_round2 = next((s for s in user_submissions if s.assessment_id == 4 and s.status != 'in_progress'), None)
 
-    in_prog_round1 = next((s for s in user_submissions if s.assessment_id in (1, 2, 3) and s.status == 'in_progress'), None)
+    in_prog_round1 = next((s for s in user_submissions if s.assessment_id != 4 and s.status == 'in_progress'), None)
     in_prog_round2 = next((s for s in user_submissions if s.assessment_id == 4 and s.status == 'in_progress'), None)
 
-    round1_assessments = Assessment.query.filter(Assessment.id.in_([1, 2, 3]), Assessment.status == 'active').order_by(Assessment.id).all()
+    round1_assessments = Assessment.query.filter(
+        Assessment.id != 4,
+        Assessment.status == 'active',
+        ~Assessment.title.ilike('%Coding%'),
+        ~Assessment.title.ilike('%Round 2%')
+    ).order_by(Assessment.id).all()
 
     return render_template(
         'candidate/dashboard.html',
