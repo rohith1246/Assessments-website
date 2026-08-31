@@ -48,7 +48,7 @@ def seed_assessment():
         "Screening Test",
         "Fundamental Technical Screening Assessment covering Linux/Ubuntu Essentials, Docker Basics, Everyday Git & GitHub Commands, and Core Python Object-Oriented Programming (OOP) Concepts. Contains 20 MCQs. Time limit: 20 minutes.",
         20,
-        50.0,
+        75.0,
         "active"
     ))
     assessment_id = cur.fetchone()[0]
