@@ -1,244 +1,243 @@
 """
 seed_internal_company_test.py
-Creates and populates the 'Internal Company Test' assessment with 20 questions:
-- 10 Linux / Ubuntu / Docker / Terminal-Bench / Snorkel MCQs
-- 5 GitHub / Git Workflows / Repository Management MCQs
-- 5 Advanced Python Programming MCQs
+Creates and populates the 'Screening Test' assessment with 20 accessible MCQs:
+- 10 Linux / Ubuntu / Docker Basics MCQs
+- 5 Git / GitHub everyday commands MCQs (clone, add, commit, push, pull)
+- 5 Python OOP Concepts MCQs (Classes, __init__, self, Inheritance, Encapsulation, Polymorphism)
 """
 import os
-from app import create_app
-from models.models import db, Assessment, Question, Submission, Answer
+import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def seed_assessment():
-    app = create_app()
-    with app.app_context():
-        db.create_all()
+    uri = os.environ.get('DATABASE_URL', '')
+    if '&channel_binding=' in uri:
+        uri = uri.split('&channel_binding=')[0]
 
-        # Fix Postgres primary key sequences if out-of-sync
-        try:
-            db.session.execute(db.text("SELECT setval(pg_get_serial_sequence('assessment_drives', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM assessment_drives;"))
-            db.session.execute(db.text("SELECT setval(pg_get_serial_sequence('assessment_questions', 'id'), COALESCE(MAX(id), 0) + 1, false) FROM assessment_questions;"))
-            db.session.commit()
-        except Exception as e:
-            print(f"Sequence sync note: {e}")
-            db.session.rollback()
+    print("Connecting to Neon database...", flush=True)
+    conn = psycopg2.connect(uri, connect_timeout=15)
+    cur = conn.cursor()
 
-        # Check if an assessment titled "Screening Test" already exists
-        existing_assessments = Assessment.query.filter(
-            db.or_(
-                Assessment.title.ilike('%Screening Test%'),
-                Assessment.title.ilike('%Internal Company Test%')
-            )
-        ).all()
+    # 1. Sync primary key sequences
+    print("Syncing sequences...", flush=True)
+    cur.execute("SELECT setval('assessment_drives_id_seq', (SELECT COALESCE(MAX(id), 1) FROM assessment_drives));")
+    cur.execute("SELECT setval('assessment_questions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM assessment_questions));")
+    conn.commit()
 
-        for old_a in existing_assessments:
-            print(f"Cleaning up existing assessment ID {old_a.id} ({old_a.title})...")
-            subs = Submission.query.filter_by(assessment_id=old_a.id).all()
-            for sub in subs:
-                Answer.query.filter_by(submission_id=sub.id).delete()
-                db.session.delete(sub)
-            Question.query.filter_by(assessment_id=old_a.id).delete()
-            db.session.delete(old_a)
-        db.session.commit()
+    # 2. Check if assessment exists and clean up old questions/submissions
+    cur.execute("SELECT id, title FROM assessment_drives WHERE title ILIKE %s OR title ILIKE %s;", ('%Screening Test%', '%Internal Company Test%'))
+    existing = cur.fetchall()
+    for eid, etitle in existing:
+        print(f"Cleaning up existing assessment {eid}: {etitle}", flush=True)
+        cur.execute("DELETE FROM assessment_answers WHERE submission_id IN (SELECT id FROM assessment_submissions WHERE assessment_id = %s);", (eid,))
+        cur.execute("DELETE FROM assessment_submissions WHERE assessment_id = %s;", (eid,))
+        cur.execute("DELETE FROM assessment_questions WHERE assessment_id = %s;", (eid,))
+        cur.execute("DELETE FROM assessment_drives WHERE id = %s;", (eid,))
+    conn.commit()
 
-        # Create new Assessment
-        assessment = Assessment(
-            title="Screening Test",
-            description=(
-                "Comprehensive Technical Evaluation covering Ubuntu/Linux Administration, "
-                "Docker Environments, Terminal-Bench & Benchmark Debugging, GitHub Workflows & CI/CD, "
-                "and Advanced Python Concepts. Contains 20 MCQs. Time limit: 20 minutes."
-            ),
-            duration=20,
-            pass_percentage=50.0,
-            status='active'
+    # 3. Create new Assessment
+    print("Creating new 'Screening Test' assessment...", flush=True)
+    cur.execute("""
+        INSERT INTO assessment_drives (title, description, duration, pass_percentage, status, created_at)
+        VALUES (%s, %s, %s, %s, %s, NOW())
+        RETURNING id;
+    """, (
+        "Screening Test",
+        "Fundamental Technical Screening Assessment covering Linux/Ubuntu Essentials, Docker Basics, Everyday Git & GitHub Commands, and Core Python Object-Oriented Programming (OOP) Concepts. Contains 20 MCQs. Time limit: 20 minutes.",
+        20,
+        50.0,
+        "active"
+    ))
+    assessment_id = cur.fetchone()[0]
+    print(f"Assessment created with ID: {assessment_id}", flush=True)
+
+    questions = [
+        # ── SECTION 1: LINUX / UBUNTU / DOCKER BASICS (10 Questions) ──
+        (
+            "Q1. Which command is used in Linux/Ubuntu to list all files and directories, including hidden ones?",
+            "ls -a",
+            "list --all",
+            "show -hidden",
+            "dir /h",
+            "A"
+        ),
+        (
+            "Q2. Which Linux command is used to navigate back to the parent directory?",
+            "cd ..",
+            "cd ~",
+            "cd /",
+            "back",
+            "A"
+        ),
+        (
+            "Q3. Which command is used to create a new directory named 'project' in Linux?",
+            "mkdir project",
+            "touch project",
+            "create project",
+            "newdir project",
+            "A"
+        ),
+        (
+            "Q4. Which command makes a shell script file named 'script.sh' executable in Linux?",
+            "chmod +x script.sh",
+            "run script.sh",
+            "exec script.sh",
+            "chown +e script.sh",
+            "A"
+        ),
+        (
+            "Q5. Which command is used to view the entire contents of a text file named 'app.log' in the terminal?",
+            "cat app.log",
+            "open app.log",
+            "echo app.log",
+            "print app.log",
+            "A"
+        ),
+        (
+            "Q6. Which package management command is used to install new software packages on Ubuntu Linux?",
+            "sudo apt install <package-name>",
+            "sudo yum install <package-name>",
+            "brew install <package-name>",
+            "pip install-ubuntu <package-name>",
+            "A"
+        ),
+        (
+            "Q7. Which Docker command is used to download an image (if not present) and start a new container from it?",
+            "docker run",
+            "docker start",
+            "docker build",
+            "docker init",
+            "A"
+        ),
+        (
+            "Q8. Which command displays all currently running Docker containers?",
+            "docker ps",
+            "docker list",
+            "docker show",
+            "docker images",
+            "A"
+        ),
+        (
+            "Q9. Which Docker command builds a Docker image from a Dockerfile located in the current directory?",
+            "docker build -t myapp .",
+            "docker create myapp",
+            "docker compile -i myapp",
+            "docker make myapp",
+            "A"
+        ),
+        (
+            "Q10. How do you stop a running Docker container with container ID 'abc123'?",
+            "docker stop abc123",
+            "docker kill-all",
+            "docker pause",
+            "docker delete abc123",
+            "A"
+        ),
+
+        # ── SECTION 2: GIT & GITHUB BASICS (5 Questions) ──
+        (
+            "Q11. Which Git command is used to download an existing remote repository from GitHub to your local computer?",
+            "git clone <repository-url>",
+            "git download <repository-url>",
+            "git copy <repository-url>",
+            "git fetch-new <repository-url>",
+            "A"
+        ),
+        (
+            "Q12. Which command stages all modified and newly created files in the current directory for the next commit?",
+            "git add .",
+            "git stage --all-files",
+            "git save",
+            "git commit -a",
+            "A"
+        ),
+        (
+            "Q13. What is the correct Git command to save your staged changes to local history with a message?",
+            "git commit -m \"Your commit message\"",
+            "git save -message \"Your commit message\"",
+            "git push -m \"Your commit message\"",
+            "git log -m \"Your commit message\"",
+            "A"
+        ),
+        (
+            "Q14. Which command uploads your committed changes from the local 'main' branch to the remote repository on GitHub?",
+            "git push origin main",
+            "git upload origin main",
+            "git send origin main",
+            "git export main",
+            "A"
+        ),
+        (
+            "Q15. Which command fetches the latest commits from the remote GitHub repository and merges them into your current local branch?",
+            "git pull",
+            "git push",
+            "git sync-only",
+            "git refresh",
+            "A"
+        ),
+
+        # ── SECTION 3: PYTHON OBJECT-ORIENTED PROGRAMMING (OOP) (5 Questions) ──
+        (
+            "Q16. In Python Object-Oriented Programming, what is the primary role of the '__init__' method inside a class?",
+            "It acts as the constructor method that initializes an object's attributes when an instance is created",
+            "It automatically deletes the object from memory when finished",
+            "It converts class data into a JSON string format",
+            "It imports external Python libraries into the class",
+            "A"
+        ),
+        (
+            "Q17. Why is 'self' passed as the first parameter in instance methods of a Python class?",
+            "It represents the specific instance of the class and provides access to its attributes and methods",
+            "It is a required keyword that makes Python code execute faster",
+            "It defines the parent class from which the class inherits",
+            "It converts local variables into global variables",
+            "A"
+        ),
+        (
+            "Q18. Consider the following Python OOP code:\n\nclass Animal:\n    def speak(self):\n        return \"Animal sound\"\n\nclass Dog(Animal):\n    def speak(self):\n        return \"Woof!\"\n\npet = Dog()\nprint(pet.speak())\n\nWhat will be printed?",
+            "Woof!",
+            "Animal sound",
+            "None",
+            "AttributeError: Dog has no speak method",
+            "A"
+        ),
+        (
+            "Q19. In Python OOP (Encapsulation), what naming convention is commonly used to indicate that an attribute or method is private/internal?",
+            "Prefixing the attribute name with an underscore or double underscore (e.g., _age or __salary)",
+            "Using the 'private' keyword before variable declaration",
+            "Writing the attribute name entirely in UPPERCASE",
+            "Declaring the variable inside a tuple",
+            "A"
+        ),
+        (
+            "Q20. What is the concept of 'Polymorphism' in Python Object-Oriented Programming?",
+            "The ability of different classes to implement methods with the same name, allowing them to be called uniformly",
+            "Creating a class that cannot be inherited by any other class",
+            "Storing all class variables in a single global dictionary",
+            "Preventing functions from accepting multiple arguments",
+            "A"
         )
-        db.session.add(assessment)
-        db.session.commit()
-        print(f"Created Assessment: '{assessment.title}' (ID: {assessment.id})")
+    ]
 
-        questions = [
-            # ── SECTION 1: UBUNTU / LINUX / DOCKER / TERMINAL-BENCH (10 Questions) ──
-            {
-                "question": "A task works locally with 'python solution/solve.py', but inside the Docker environment it fails with: 'python: command not found' while 'python3' exists. What is the best fix?",
-                "option_a": "Install Java into the container",
-                "option_b": "Change the solver to explicitly use python3 or provide the expected python command/symlink in the image",
-                "option_c": "Delete the evaluation tests",
-                "option_d": "Run Docker with the --privileged flag",
-                "correct_answer": "B"
-            },
-            {
-                "question": "Given a Dockerfile with: 'WORKDIR /app' and 'COPY . /app' in a repository containing solution/solve.sh, tests/test.sh, and src/, what is the primary concern in an agent benchmark task?",
-                "option_a": "/app cannot contain executable shell scripts",
-                "option_b": "The image may expose solution and hidden test material to the benchmark agent",
-                "option_c": "Docker cannot copy hidden directories",
-                "option_d": "Ubuntu does not support the /app directory path",
-                "correct_answer": "B"
-            },
-            {
-                "question": "You receive the runtime error: 'bash: ./solution/solve.sh: Permission denied'. What is the most direct and appropriate fix?",
-                "option_a": "chmod +x solution/solve.sh",
-                "option_b": "chmod 777 /",
-                "option_c": "sudo docker restart",
-                "option_d": "apt install bash",
-                "correct_answer": "A"
-            },
-            {
-                "question": "A solver generates '/app/output/result.json', but the verifier container cannot find it. Which should you investigate FIRST?",
-                "option_a": "Whether the LLM provider supports JSON output format",
-                "option_b": "Whether /app/output is actually shared or transferred between the solver and verifier environments",
-                "option_c": "Whether Ubuntu has Python installed",
-                "option_d": "Whether Git is installed in the container",
-                "correct_answer": "B"
-            },
-            {
-                "question": "Inside a running container, you execute: echo 'fixed' > /tmp/result.txt. The container is subsequently destroyed and recreated. What happens to /tmp/result.txt?",
-                "option_a": "/tmp/result.txt is guaranteed to remain intact",
-                "option_b": "It normally disappears with the container lifecycle unless explicitly mounted or persisted externally",
-                "option_c": "Docker automatically commits the modification to the base image",
-                "option_d": "The file is moved to /home automatically",
-                "correct_answer": "B"
-            },
-            {
-                "question": "A Dockerfile contains: 'RUN python3 -m pip install pandas'. The build succeeds, but the runtime task later reports: 'ModuleNotFoundError: No module named pandas'. Which explanation is most plausible?",
-                "option_a": "The package was installed into a different environment/interpreter than the one executing the task",
-                "option_b": "Docker cannot install Python packages during build time",
-                "option_c": "pandas only works natively on Windows operating systems",
-                "option_d": "RUN commands execute only after the container exits",
-                "correct_answer": "A"
-            },
-            {
-                "question": "An agent is instructed to modify '/app/config/settings.yaml', but the repository contains 'environment/data/config/settings.yaml' and the Dockerfile contains 'COPY data /app/data'. What should the agent determine before editing?",
-                "option_a": "Whether /app/config actually exists at runtime in the container filesystem",
-                "option_b": "Whether GitHub is currently online",
-                "option_c": "Whether the host machine is running Windows",
-                "option_d": "Whether Java is installed on the host",
-                "correct_answer": "A"
-            },
-            {
-                "question": "A service inside Container A is listening on 127.0.0.1:8080. Container B on the same Docker network attempts to connect to 'container-a:8080' but fails. What is the likely cause?",
-                "option_a": "127.0.0.1 binds exclusively to Container A's own loopback interface, not all network interfaces reachable from Container B",
-                "option_b": "Docker containers cannot communicate over TCP networks",
-                "option_c": "Port 8080 is restricted exclusively to Windows platforms",
-                "option_d": "Python blocks all inter-container networking by default",
-                "correct_answer": "A"
-            },
-            {
-                "question": "A Terminal-Bench task asks you to determine why a background process keeps restarting unexpectedly. Which combination provides the most useful initial investigation?",
-                "option_a": "ps, pgrep, journalctl, and systemctl status commands",
-                "option_b": "chmod -R 777 /",
-                "option_c": "rm -rf /tmp/*",
-                "option_d": "git push origin main",
-                "correct_answer": "A"
-            },
-            {
-                "question": "A benchmark task has Dockerfile, run_pipeline.sh, solution/solve.sh, and tests/test.sh. Oracle passes (Reward: 1.0), but an agent receives Reward: 0.0 with logs: 'Could not find /app/repro_test.json'. What should you investigate before concluding the task is difficult for the model?",
-                "option_a": "Whether the required artifact is created at the expected path and survives/transfers correctly between execution stages",
-                "option_b": "Increase task difficulty score",
-                "option_c": "Add more third-party dependencies",
-                "option_d": "Hide the tests from the verifier",
-                "correct_answer": "A"
-            },
+    for q, a, b, c, d, ans in questions:
+        cur.execute("""
+            INSERT INTO assessment_questions (assessment_id, question, option_a, option_b, option_c, option_d, correct_answer)
+            VALUES (%s, %s, %s, %s, %s, %s, %s);
+        """, (assessment_id, q, a, b, c, d, ans))
 
-            # ── SECTION 2: GITHUB / GIT WORKFLOWS & REPO MANAGEMENT (5 Questions) ──
-            {
-                "question": "When you create multiple feature branches locally and want to push the main branch along with all your feature PR branches to your GitHub repository at once, which command sequence is used?",
-                "option_a": "git push origin master",
-                "option_b": "git push -u origin main followed by git push origin --all",
-                "option_c": "git commit --push-everything",
-                "option_d": "git remote push --branches",
-                "correct_answer": "B"
-            },
-            {
-                "question": "Why is 'git merge --no-ff <branch-name>' (No Fast-Forward) preferred over standard fast-forward merges when building enterprise repositories with feature pull requests?",
-                "option_a": "It reduces the total repository size on disk",
-                "option_b": "It creates an explicit merge commit that preserves the historical existence of the feature branch and its grouped commit history",
-                "option_c": "It automatically resolves all merge conflicts without human intervention",
-                "option_d": "It converts JavaScript files into TypeScript files",
-                "correct_answer": "B"
-            },
-            {
-                "question": "What is the industry best practice on GitHub for handling environment configurations and preventing secret leaks (API keys, database URLs)?",
-                "option_a": "Commit the .env file directly to GitHub so team members can read the keys immediately",
-                "option_b": "Add .env to .gitignore, commit only a template .env.example with dummy values, and load secrets via runtime environment variables",
-                "option_c": "Encrypt passwords directly in the README.md file",
-                "option_d": "Rename the .env file to .env.txt before pushing",
-                "correct_answer": "B"
-            },
-            {
-                "question": "What is GitHub's strict per-file upload size threshold, and what happens if a commit contains a single file exceeding this limit?",
-                "option_a": "10 MB — Git automatically splits the file into multiple chunks",
-                "option_b": "50 MB (warning) and 100 MB (hard block) — GitHub will reject the git push completely with a fatal pre-receive error",
-                "option_c": "1 GB — GitHub compresses it into a ZIP archive automatically",
-                "option_d": "There is no limit on file sizes on GitHub",
-                "correct_answer": "B"
-            },
-            {
-                "question": "Where must CI/CD pipeline definitions be stored in a GitHub repository so that automated test suites execute automatically on every push and pull request?",
-                "option_a": "server/tests/ci.json",
-                "option_b": ".github/workflows/<workflow-name>.yml",
-                "option_c": "config/github-actions.xml",
-                "option_d": ".git/hooks/pre-push",
-                "correct_answer": "B"
-            },
+    conn.commit()
+    print(f"Successfully inserted {len(questions)} questions into 'Screening Test' (ID: {assessment_id})!", flush=True)
 
-            # ── SECTION 3: PYTHON PROGRAMMING & CORE CONCEPTS (5 Questions) ──
-            {
-                "question": "Consider the following Python code:\n\ndef append_to_list(val, items=[]):\n    items.append(val)\n    return items\n\nprint(append_to_list(1))\nprint(append_to_list(2))\n\nWhat will be printed to stdout?",
-                "option_a": "[1] followed by [2]",
-                "option_b": "[1] followed by [1, 2]",
-                "option_c": "[1, 2] followed by [1, 2]",
-                "option_d": "TypeError: mutable default argument not permitted",
-                "correct_answer": "B"
-            },
-            {
-                "question": "In standard CPython, which statement accurately describes the Global Interpreter Lock (GIL) and high-concurrency execution?",
-                "option_a": "The GIL prevents multi-threaded Python programs from executing CPU-bound bytecode simultaneously across multiple cores; multiprocessing or C extensions are required for true CPU parallelism",
-                "option_b": "The GIL completely prevents asynchronous I/O when using asyncio",
-                "option_c": "Multi-threading in Python automatically runs CPU-bound operations in parallel across all CPU cores",
-                "option_d": "The GIL only affects memory allocation on Windows operating systems",
-                "correct_answer": "A"
-            },
-            {
-                "question": "Which of the following statements about Python generators (functions utilizing the 'yield' keyword) is TRUE compared to returning standard lists?",
-                "option_a": "Generators load the entire dataset into RAM at initialization before yielding items",
-                "option_b": "Generators produce items lazily on demand one at a time, resulting in O(1) auxiliary memory complexity during iteration",
-                "option_c": "A generator function can only be iterated over using a while loop and cannot be used in a for loop",
-                "option_d": "Generators cannot accept input parameters",
-                "correct_answer": "B"
-            },
-            {
-                "question": "What happens under the hood when a 'with open(\"data.txt\", \"r\") as f:' statement completes execution or encounters an unhandled exception inside the block?",
-                "option_a": "Python immediately deletes the file from disk",
-                "option_b": "Python invokes the context manager's __exit__ method, guaranteeing that file descriptors and system resources are cleanly closed",
-                "option_c": "Python silently suppresses all exceptions and disables stack trace output",
-                "option_d": "The file descriptor remains open in memory until the operating system restarts",
-                "correct_answer": "B"
-            },
-            {
-                "question": "What is the output of the following Python snippet?\n\ndef calculate_total(*args, **kwargs):\n    return sum(args) + kwargs.get('bonus', 0)\n\nnums = [10, 20, 30]\nextra = {'bonus': 15, 'multiplier': 2}\nprint(calculate_total(*nums, **extra))",
-                "option_a": "60",
-                "option_b": "75",
-                "option_c": "150",
-                "option_d": "TypeError: calculate_total() got unexpected keyword argument",
-                "correct_answer": "B"
-            }
-        ]
+    # Display active assessments
+    cur.execute("SELECT id, title, duration, status, (SELECT count(*) FROM assessment_questions WHERE assessment_id=assessment_drives.id) as qcount FROM assessment_drives ORDER BY id;")
+    rows = cur.fetchall()
+    print("\n--- Current Assessments in Database ---", flush=True)
+    for r in rows:
+        print(f"ID: {r[0]} | Title: {r[1]} | Duration: {r[2]}m | Status: {r[3]} | Questions: {r[4]}", flush=True)
 
-        for idx, q_data in enumerate(questions, start=1):
-            q_obj = Question(
-                assessment_id=assessment.id,
-                question=f"Q{idx}. {q_data['question']}",
-                option_a=q_data['option_a'],
-                option_b=q_data['option_b'],
-                option_c=q_data['option_c'],
-                option_d=q_data['option_d'],
-                correct_answer=q_data['correct_answer']
-            )
-            db.session.add(q_obj)
-
-        db.session.commit()
-        print(f"Successfully seeded {len(questions)} questions into '{assessment.title}' (ID: {assessment.id})!")
+    conn.close()
 
 if __name__ == '__main__':
     seed_assessment()
