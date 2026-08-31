@@ -140,6 +140,16 @@ async function requestScreenshare() {
       console.warn('Webcam unavailable:', camErr);
     }
     
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        await document.documentElement.webkitRequestFullscreen();
+      }
+    } catch (fsErr) {
+      console.warn('Fullscreen bypassed:', fsErr);
+    }
+
     document.getElementById('screenshareOverlay').style.display = 'none';
     startTimer();
     renderQuestion(currentQuestion);
@@ -152,13 +162,46 @@ async function requestScreenshare() {
   } catch (err) {
     alert('Screenshare permission is mandatory to attempt this assessment.');
     btn.disabled = false;
-    btn.textContent = 'Enable Screenshare & Start Test';
+    btn.textContent = 'Enable Screenshare & Launch Full Screen';
   }
 }
 
+// ── Fullscreen Enforcer ──────────────────────────────────────
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+}
+
+window.reEnterFullscreen = async function() {
+  try {
+    if (document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      await document.documentElement.webkitRequestFullscreen();
+    }
+    const fsOverlay = document.getElementById('fullscreenLockOverlay');
+    if (fsOverlay) fsOverlay.style.display = 'none';
+  } catch (e) {}
+};
+
 // ── Anti-Cheat & Anti-Extension Shield ───────────────────────
 function setupAntiCheatListeners() {
-  // 1. Tab switches & minimizing
+  // 1. Fullscreen Change Monitor
+  const handleFullscreenChange = () => {
+    if (!antiCheatActive || isSubmitting) return;
+    if (!isFullscreen()) {
+      const fsOverlay = document.getElementById('fullscreenLockOverlay');
+      if (fsOverlay) fsOverlay.style.display = 'flex';
+      recordViolation('fullscreen_exit');
+    } else {
+      const fsOverlay = document.getElementById('fullscreenLockOverlay');
+      if (fsOverlay) fsOverlay.style.display = 'none';
+    }
+  };
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
+  // 2. Tab switches & window blurring
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && antiCheatActive && !isSubmitting) {
       recordViolation('tab_switch');
@@ -171,13 +214,13 @@ function setupAntiCheatListeners() {
     }
   });
 
-  // 2. Prevent right-click context menu
+  // 3. Prevent right-click context menu
   document.addEventListener('contextmenu', e => {
     e.preventDefault();
     return false;
   });
 
-  // 3. Block copy, cut, paste, drag & drop
+  // 4. Block copy, cut, paste, drag & drop
   ['copy', 'cut', 'paste', 'dragstart', 'drop'].forEach(evt => {
     document.addEventListener(evt, e => {
       e.preventDefault();
@@ -185,7 +228,33 @@ function setupAntiCheatListeners() {
     });
   });
 
-  // 4. Block Developer Tools & Common Extension Shortcuts
+  // 5. Block Text Selection (Neutralizes Extension Highlighting Triggers)
+  document.addEventListener('selectstart', e => {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      return;
+    }
+    const sel = window.getSelection();
+    if (sel && sel.removeAllRanges) {
+      sel.removeAllRanges();
+    }
+  });
+  document.addEventListener('mouseup', () => {
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      return;
+    }
+    const sel = window.getSelection();
+    if (sel && sel.removeAllRanges) {
+      sel.removeAllRanges();
+    }
+  });
+
+  // 6. Block Developer Tools & Common Extension Shortcuts
   document.addEventListener('keydown', e => {
     if (e.key === 'F12' || e.keyCode === 123 || e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
       e.preventDefault();
@@ -203,7 +272,30 @@ function setupAntiCheatListeners() {
     }
   });
 
-  // 5. Anti-AI Extension DOM Scanner
+  // 7. Anti-AI Extension Realtime Mutation Observer
+  const extensionObserver = new MutationObserver(mutations => {
+    mutations.forEach(m => {
+      m.addedNodes.forEach(node => {
+        if (node.nodeType === 1) { // Element
+          const tag = (node.tagName || '').toLowerCase();
+          const id = (node.id || '').toLowerCase();
+          const cls = (typeof node.className === 'string' ? node.className : '').toLowerCase();
+          
+          if (tag.includes('-') || tag.includes('extension') || 
+              id.includes('chatgpt') || id.includes('copilot') || id.includes('merlin') || id.includes('sider') || id.includes('monica') || id.includes('harpa') || id.includes('grammarly') || id.includes('quillbot') || id.includes('ai-') ||
+              cls.includes('chatgpt') || cls.includes('copilot') || cls.includes('merlin') || cls.includes('sider') || cls.includes('monica') || cls.includes('harpa') || cls.includes('grammarly') || cls.includes('quillbot') ||
+              (tag === 'iframe' && !node.closest('.exam-layout') && !node.closest('.violation-overlay'))) {
+            try { node.remove(); } catch(e) {}
+          }
+        }
+      });
+    });
+  });
+  try {
+    extensionObserver.observe(document.documentElement, { childList: true, subtree: true });
+  } catch(e) {}
+
+  // 8. Periodic Fallback Scanner for Injected Extension Nodes
   setInterval(() => {
     if (!antiCheatActive) return;
     const suspiciousSelectors = [
@@ -213,8 +305,10 @@ function setupAntiCheatListeners() {
       '[id*="sider" i]', '[class*="sider" i]',
       '[id*="monica" i]', '[class*="monica" i]',
       '[id*="harpa" i]', '[class*="harpa" i]',
+      '[id*="quillbot" i]', '[class*="quillbot" i]',
       '[id*="grammarly" i]', '[class*="grammarly" i]',
-      '[id*="ai-assistant" i]', '[class*="ai-assistant" i]'
+      '[id*="ai-assistant" i]', '[class*="ai-assistant" i]',
+      'iframe[src*="chrome-extension"]', 'iframe[src*="moz-extension"]'
     ];
     suspiciousSelectors.forEach(sel => {
       try {
@@ -227,7 +321,7 @@ function setupAntiCheatListeners() {
         });
       } catch (err) {}
     });
-  }, 1500);
+  }, 500);
 }
 
 async function recordViolation(reason) {

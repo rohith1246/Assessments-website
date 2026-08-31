@@ -667,10 +667,24 @@
     <div style="font-size: 40px; margin-bottom: 12px;">🖥️</div>
     <h2 style="font-size: 20px; font-weight: 800; color: #a78bfa; margin-bottom: 8px;">Proctoring Setup Required</h2>
     <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
-      This assessment is strictly monitored. You must share your <strong>Entire Screen</strong>. <strong>Note:</strong> Switching tabs or navigating away even <strong>once</strong> will automatically submit your exam immediately.
+      This assessment is strictly monitored. You must share your <strong>Entire Screen</strong> and remain in <strong>Full-Screen Mode</strong>. <strong>Note:</strong> Switching tabs, exiting full screen, or using extensions will automatically submit your exam immediately.
     </p>
-    <button class="btn-primary-mcq" id="startScreenshareBtn" onclick="requestScreenshare()" style="width: 100%; padding: 12px; font-size: 14px;">
-      Enable Screenshare &amp; Start Test
+    <button class="btn-primary-mcq" id="startScreenshareBtn" onclick="requestScreenshare()" style="width: 100%; padding: 12px; font-size: 14px; background: linear-gradient(135deg, #7c3aed, #6d28d9);">
+      Enable Screenshare &amp; Launch Full Screen
+    </button>
+  </div>
+</div>
+
+<!-- Fullscreen Lock Overlay -->
+<div class="violation-overlay" id="fullscreenLockOverlay" style="display:none; background: rgba(9, 13, 22, 0.95); z-index: 99998;">
+  <div class="violation-card" style="border: 2px solid #ef4444;">
+    <div style="font-size: 40px; margin-bottom: 12px;">🖥️</div>
+    <h2 style="font-size: 20px; font-weight: 800; color: #f87171; margin-bottom: 8px;">Full Screen Required</h2>
+    <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px;">
+      You exited full-screen mode. This assessment must be completed in full-screen mode without external sidebars, extensions, or split windows.
+    </p>
+    <button class="btn-primary-mcq" onclick="reEnterFullscreen()" style="width: 100%; padding: 12px; font-size: 14px; background: linear-gradient(135deg, #ef4444, #dc2626);">
+      Return to Full Screen to Continue
     </button>
   </div>
 </div>
