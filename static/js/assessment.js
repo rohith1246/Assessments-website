@@ -317,10 +317,18 @@ function renderQuestion(idx) {
   if (prevBtn) prevBtn.disabled = (idx === 0);
   if (nextBtn) {
     if (idx === QUESTIONS.length - 1) {
-      nextBtn.innerHTML = 'Switch to Coding Sandbox <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
-      nextBtn.onclick = () => switchMainSection('coding');
+      if (typeof IS_CODING_ROUND !== 'undefined' && IS_CODING_ROUND) {
+        nextBtn.innerHTML = 'Switch to Coding Sandbox <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+        nextBtn.style.background = '';
+        nextBtn.onclick = () => switchMainSection('coding');
+      } else {
+        nextBtn.innerHTML = 'Submit Assessment <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+        nextBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        nextBtn.onclick = () => confirmSubmit();
+      }
     } else {
       nextBtn.innerHTML = 'Next <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+      nextBtn.style.background = '';
       nextBtn.onclick = () => navigateTo(idx + 1);
     }
   }

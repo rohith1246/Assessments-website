@@ -678,8 +678,9 @@
     </aside>
   </div>
 
+  {% if is_coding_round %}
   <!-- ── SECTION 2: LIVE CODING SANDBOX (SPLIT IDE) ── -->
-  <div id="codingSection" style="{% if is_coding_round or questions|length == 0 %}display: grid;{% else %}display: none;{% endif %}">
+  <div id="codingSection" style="display: grid;">
     <!-- Left Pane: Problem Description -->
     <div class="code-left-pane">
       <div class="prob-header">
@@ -731,6 +732,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
 
 </div>
 
