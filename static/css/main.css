@@ -1255,10 +1255,14 @@ ul { list-style: none; }
 .rs-icon  { font-size: 16px; }
 .rs-value { font-size: 20px; font-weight: 800; color: var(--text-primary); }
 .rs-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.rs-correct { border-color: rgba(16,185,129,0.15); }
+.rs-correct { border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.06); }
 .rs-correct .rs-value { color: var(--emerald-dark); }
-.rs-wrong   { border-color: rgba(239,68,68,0.12); }
+.rs-wrong   { border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.06); }
 .rs-wrong .rs-value   { color: var(--danger); }
+.rs-unans   { border-color: rgba(245,158,11,0.25); background: rgba(245,158,11,0.06); }
+.rs-unans .rs-value   { color: #d97706; }
+.rs-total   { border-color: rgba(59,130,246,0.25); background: rgba(59,130,246,0.06); }
+.rs-total .rs-value   { color: #2563eb; }
 
 .pass-info {
   display: flex; align-items: center; justify-content: center; gap: 8px;

@@ -89,7 +89,7 @@
       </div>
 
       <!-- Stats Breakdown -->
-      <div class="result-stats" style="grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));">
+      <div class="result-stats" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));">
         {% if is_coding_round %}
         <div class="rs-item" style="background: rgba(139, 92, 246, 0.08); border-color: rgba(139, 92, 246, 0.25);">
           <span class="rs-icon" style="color: #a78bfa;">💻</span>
@@ -103,14 +103,24 @@
         </div>
         {% else %}
         <div class="rs-item rs-correct">
-          <span class="rs-icon">📝</span>
+          <span class="rs-icon">✓</span>
           <span class="rs-value">{{ submission.score }}</span>
-          <span class="rs-label">MCQs Correct</span>
+          <span class="rs-label">Correct</span>
         </div>
         <div class="rs-item rs-wrong">
           <span class="rs-icon">✕</span>
           <span class="rs-value">{{ wrong }}</span>
-          <span class="rs-label">MCQs Wrong</span>
+          <span class="rs-label">Incorrect</span>
+        </div>
+        <div class="rs-item rs-unans">
+          <span class="rs-icon">⚪</span>
+          <span class="rs-value">{{ unanswered }}</span>
+          <span class="rs-label">Unanswered</span>
+        </div>
+        <div class="rs-item rs-total">
+          <span class="rs-icon">📝</span>
+          <span class="rs-value">{{ submission.total_questions }}</span>
+          <span class="rs-label">Total MCQs</span>
         </div>
         {% endif %}
         <div class="rs-item rs-vio">
