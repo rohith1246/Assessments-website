@@ -603,13 +603,13 @@
 
     <!-- Active Round Badge -->
     <div style="display: flex; align-items: center; gap: 8px;">
-      {% if is_coding_round %}
+      {% if 'Round 2' in assessment.title or 'Technical Round' in assessment.title %}
       <span style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.35); color: #c084fc; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;">
-        💻 Round 2: Technical Live Coding Sandbox
+        ✍️ Round 2: Technical Evaluation ({{ questions|length }} FIB Questions)
       </span>
       {% else %}
       <span style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.35); color: #60a5fa; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;">
-        📝 Round 1: Online MCQ Assessment ({{ questions|length }} Questions)
+        📝 Round 1: Online Screening Test ({{ questions|length }} Questions)
       </span>
       {% endif %}
     </div>
@@ -628,8 +628,8 @@
       <div class="vio-indicator {% if submission.violations == 0 %}vio-clear{% endif %}" id="vioIndicator">
         ⚠ <span id="vioHeader">{{ submission.violations }}</span>/1 violation
       </div>
-      <button onclick="confirmSubmit()" style="background: linear-gradient(135deg, {% if is_coding_round %}#7c3aed, #6d28d9{% else %}#2563eb, #1d4ed8{% endif %}); border: none; color: #fff; font-weight: 700; font-size: 12px; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-        {% if is_coding_round %}Submit Coding Round{% else %}Submit MCQ Exam{% endif %}
+      <button onclick="confirmSubmit()" style="background: linear-gradient(135deg, {% if 'Round 2' in assessment.title %}#7c3aed, #6d28d9{% else %}#2563eb, #1d4ed8{% endif %}); border: none; color: #fff; font-weight: 700; font-size: 12px; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        Submit Assessment
       </button>
     </div>
   </header>

@@ -126,7 +126,7 @@ def engine():
     assessment = db.session.get(Assessment, assessment_id)
     candidate = db.session.get(Candidate, session['candidate_id'])
 
-    is_coding_round = (assessment_id == 4 or 'Coding' in (assessment.title or '') or 'Round 2' in (assessment.title or ''))
+    is_coding_round = False
 
     if is_coding_round:
         shuffled_questions = []
@@ -466,8 +466,8 @@ def submit():
         # Already submitted
         return redirect(url_for('assessment.result', submission_id=submission.id))
 
-    is_coding_round = (submission.assessment_id == 4 or 'Coding' in (submission.assessment.title or '') or 'Round 2' in (submission.assessment.title or ''))
-    pass_pct = submission.assessment.pass_percentage if submission.assessment else 25.0
+    is_coding_round = False
+    pass_pct = submission.assessment.pass_percentage if submission.assessment else 75.0
 
     if is_coding_round:
         # Sum coding score from coding submissions for Round 2
