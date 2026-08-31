@@ -419,7 +419,7 @@ def record_violation():
     submission.violations = (submission.violations or 0) + 1
     db.session.commit()
 
-    auto_submit = submission.violations >= 3
+    auto_submit = submission.violations >= 1
     return api_success(data={
         'violations': submission.violations,
         'auto_submit': auto_submit,

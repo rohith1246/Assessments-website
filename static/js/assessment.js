@@ -198,8 +198,8 @@ async function recordViolation(reason) {
     }
   } catch (err) {}
 
-  if (violations >= 3) {
-    autoSubmit('Maximum violations exceeded');
+  if (violations >= 1) {
+    autoSubmit('Tab switch detected (Strict Single-Violation Policy)');
   } else {
     showViolationModal(violations);
   }

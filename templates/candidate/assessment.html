@@ -567,7 +567,7 @@
     <div style="font-size: 40px; margin-bottom: 12px;">🖥️</div>
     <h2 style="font-size: 20px; font-weight: 800; color: #a78bfa; margin-bottom: 8px;">Proctoring Setup Required</h2>
     <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px;">
-      This assessment is monitored. You must share your <strong>Entire Screen</strong> before you can access the exam questions or live coding sandbox.
+      This assessment is strictly monitored. You must share your <strong>Entire Screen</strong>. <strong>Note:</strong> Switching tabs or navigating away even <strong>once</strong> will automatically submit your exam immediately.
     </p>
     <button class="btn-primary-mcq" id="startScreenshareBtn" onclick="requestScreenshare()" style="width: 100%; padding: 12px; font-size: 14px;">
       Enable Screenshare &amp; Start Test
@@ -580,9 +580,8 @@
   <div class="violation-card">
     <div style="font-size: 40px; margin-bottom: 12px;">⚠️</div>
     <h2 style="font-size: 20px; font-weight: 800; color: #f87171; margin-bottom: 8px;" id="vioTitle">Tab Switch Detected!</h2>
-    <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px;" id="vioMsg">Please stay on this window. Switching tabs or exiting fullscreen is a monitored violation.</p>
-    <div style="font-size: 13px; font-weight: 700; color: #fbbf24; margin-bottom: 20px;">Violation <span id="vioCount">1</span> of 3</div>
-    <button class="btn-primary-mcq" onclick="dismissViolation()" style="width: 100%; padding: 12px;">I Understand — Continue</button>
+    <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px;" id="vioMsg">Switching tabs is prohibited under strict proctoring. Your assessment is being submitted.</p>
+    <div style="font-size: 13px; font-weight: 700; color: #fbbf24; margin-bottom: 20px;">Violation <span id="vioCount">1</span> of 1</div>
   </div>
 </div>
 
@@ -627,7 +626,7 @@
         <span class="ec-ht">{{ candidate.hall_ticket }}</span>
       </div>
       <div class="vio-indicator {% if submission.violations == 0 %}vio-clear{% endif %}" id="vioIndicator">
-        ⚠ <span id="vioHeader">{{ submission.violations }}</span>/3 violations
+        ⚠ <span id="vioHeader">{{ submission.violations }}</span>/1 violation
       </div>
       <button onclick="confirmSubmit()" style="background: linear-gradient(135deg, {% if is_coding_round %}#7c3aed, #6d28d9{% else %}#2563eb, #1d4ed8{% endif %}); border: none; color: #fff; font-weight: 700; font-size: 12px; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
         {% if is_coding_round %}Submit Coding Round{% else %}Submit MCQ Exam{% endif %}
