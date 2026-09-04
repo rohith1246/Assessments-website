@@ -77,6 +77,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Round 2 (FIB) Results
       </a>
+      <a href="{{ url_for('admin.report_tech_round_3') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Round 3 (Coding) Results
+      </a>
       <a href="{{ url_for('admin.daily_reports') }}" class="nav-pill-item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
         Daily Reports
@@ -260,16 +264,16 @@
       </div>
     </div>
 
-    <!-- ── Round 2 Live Coding Submissions Table ────────────────────────── -->
+    <!-- ── Round 3 Live Coding Submissions Table ────────────────────────── -->
     <div class="glass-card panel" style="margin-bottom: 24px;">
       <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h2 class="panel-title" style="display: inline-flex; align-items: center; gap: 8px;">
-            💻 Round 2: Technical Live Coding Submissions
+            💻 Round 3: Technical Live Coding Submissions
           </h2>
           <span style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">Recent candidate solution evaluations</span>
         </div>
-        <a href="{{ url_for('admin.report_tech_round_2') }}" class="btn btn-ghost btn-sm">View Full Tech Report →</a>
+        <a href="{{ url_for('admin.report_tech_round_3') }}" class="btn btn-ghost btn-sm">View Full Tech Report →</a>
       </div>
       <div class="panel-body" style="padding: 0;">
         {% if recent_coding_submissions %}

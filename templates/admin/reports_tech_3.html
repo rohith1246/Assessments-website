@@ -1,0 +1,565 @@
+{% extends "base.html" %}
+{% block title %}Technical Round 3 (Live Coding) Results — Admin Portal{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block body %}
+<style>
+  .tech3-header-card {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+    border-radius: 16px;
+    padding: 28px 32px;
+    color: #ffffff;
+    box-shadow: 0 10px 25px -5px rgba(4, 120, 87, 0.4);
+    margin-bottom: 24px;
+  }
+  .tech3-badge-tag {
+    background: rgba(167, 243, 208, 0.2);
+    color: #a7f3d0;
+    border: 1px solid rgba(167, 243, 208, 0.3);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    text-transform: uppercase;
+  }
+  .tech3-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .tech3-stat-card {
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  }
+  .tech3-stat-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .tech3-stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+  }
+  .tech3-table-card {
+    background: var(--bg-primary, #ffffff);
+    border-radius: 16px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 30px;
+  }
+  .tech3-table th {
+    background: #0f172a;
+    color: #94a3b8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    border: none;
+    padding: 14px 18px;
+  }
+  .tech3-table td {
+    padding: 14px 18px;
+    font-size: 13.5px;
+    color: var(--text-primary, #334155);
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
+  }
+  .tech3-table tr:hover td {
+    background: rgba(16, 185, 129, 0.03);
+  }
+  .status-badge-pass {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .status-badge-fail {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-inspect-code {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-inspect-code:hover {
+    background: #059669;
+    color: #ffffff;
+  }
+  .btn-delete-row {
+    background: transparent;
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-delete-row:hover {
+    background: #ef4444;
+    color: #ffffff;
+  }
+
+  /* Code Inspection Modal */
+  .code-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+  }
+  .code-modal-card {
+    background: #0f172a;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 960px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    color: #f8fafc;
+    overflow: hidden;
+  }
+  .code-modal-header {
+    padding: 20px 28px;
+    background: #064e3b;
+    border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .code-modal-body {
+    padding: 24px 28px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .code-problem-card {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .code-block-container {
+    background: #090d16;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 12px;
+    position: relative;
+    overflow-x: auto;
+  }
+  .code-block-container pre {
+    margin: 0;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #38bdf8;
+    line-height: 1.5;
+  }
+  .btn-copy-code {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #cbd5e1;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .btn-copy-code:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+</style>
+
+<div class="admin-layout">
+
+  <!-- Top Navigation Bar -->
+  <header class="admin-topnav">
+    <div class="topnav-left">
+      <img src="{{ url_for('static', filename='image.png') }}" alt="Lionix Logo" class="topnav-brand-img" />
+    </div>
+
+    <nav class="topnav-pill-nav">
+      <a href="{{ url_for('admin.dashboard') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="{{ url_for('admin.assessments') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Assessments
+      </a>
+      <a href="{{ url_for('admin.results') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Round 1 (MCQ) Results
+      </a>
+      <a href="{{ url_for('admin.report_tech_round_2') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Round 2 (FIB) Results
+      </a>
+      <a href="{{ url_for('admin.report_tech_round_3') }}" class="nav-pill-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Round 3 (Coding) Results
+      </a>
+      <a href="{{ url_for('admin.daily_reports') }}" class="nav-pill-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+        Daily Reports
+      </a>
+    </nav>
+
+    <div class="topnav-right">
+      <a href="{{ url_for('admin.logout') }}" class="btn btn-outline-light btn-sm">Log Out</a>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="container py-4">
+
+    <!-- Header Gradient Banner -->
+    <div class="tech3-header-card d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <span class="tech3-badge-tag mb-2 d-inline-block">Stage 3 — Technical Live Coding Evaluation (Monaco Sandbox)</span>
+        <h2 class="fw-bold text-white mb-1" style="font-size: 26px;">Technical Round 3 Results &amp; Code Execution Review</h2>
+        <p class="mb-0" style="color: #cbd5e1; font-size: 13.5px;">Candidate submissions for Live Coding problems (45 Mins | 70% Cutoff | Automated Multi-Language Testcases)</p>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('admin.export_tech_round_3_reports', format_type='xlsx', status='pass', track=selected_track) }}" class="btn btn-success fw-bold px-3 py-2" style="background: #10b981; border: none; border-radius: 10px;">
+          🟢 Export Passed (Excel)
+        </a>
+        <a href="{{ url_for('admin.export_tech_round_3_reports', format_type='xlsx', status='fail', track=selected_track) }}" class="btn btn-danger fw-bold px-3 py-2" style="background: #ef4444; border: none; border-radius: 10px;">
+          🔴 Export Failed (Excel)
+        </a>
+        <a href="{{ url_for('admin.export_tech_round_3_reports', format_type='xlsx', track=selected_track) }}" class="btn btn-primary fw-bold px-3 py-2" style="background: #047857; border: none; border-radius: 10px;">
+          📊 Export All (Excel)
+        </a>
+        <a href="{{ url_for('admin.export_tech_round_3_reports', format_type='csv', track=selected_track) }}" class="btn btn-outline-light fw-bold px-3 py-2" style="border-radius: 10px; border-color: rgba(255,255,255,0.4); color: #fff;">
+          📄 Export All (CSV)
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="tech3-stats-grid">
+      <div class="tech3-stat-card">
+        <div class="tech3-stat-label">Total Submissions</div>
+        <div class="tech3-stat-value">{{ total_count }}</div>
+      </div>
+      <div class="tech3-stat-card">
+        <div class="tech3-stat-label">Passed Candidates</div>
+        <div class="tech3-stat-value" style="color: #059669;">{{ passed_count }}</div>
+      </div>
+      <div class="tech3-stat-card">
+        <div class="tech3-stat-label">Failed Candidates</div>
+        <div class="tech3-stat-value" style="color: #dc2626;">{{ failed_count }}</div>
+      </div>
+      <div class="tech3-stat-card">
+        <div class="tech3-stat-label">Pass Percentage</div>
+        <div class="tech3-stat-value" style="color: #0284c7;">{{ pass_rate }}%</div>
+      </div>
+      <div class="tech3-stat-card">
+        <div class="tech3-stat-label">Avg Coding Score</div>
+        <div class="tech3-stat-value" style="color: #7c3aed;">{{ avg_score }} pts</div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div style="display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 20px;">
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.report_tech_round_3', status='all', track=selected_track, search=search) }}" class="btn {% if status == 'all' or not status %}btn-primary{% else %}btn-ghost{% endif %}" style="padding: 6px 14px; font-size: 13px;">
+          All Status
+        </a>
+        <a href="{{ url_for('admin.report_tech_round_3', status='pass', track=selected_track, search=search) }}" class="btn {% if status == 'pass' %}btn-success{% else %}btn-ghost{% endif %}" style="padding: 6px 14px; font-size: 13px;">
+          ✓ Passed
+        </a>
+        <a href="{{ url_for('admin.report_tech_round_3', status='fail', track=selected_track, search=search) }}" class="btn {% if status == 'fail' %}btn-danger{% else %}btn-ghost{% endif %}" style="padding: 6px 14px; font-size: 13px;">
+          ✕ Failed
+        </a>
+      </div>
+
+      <form method="GET" action="{{ url_for('admin.report_tech_round_3') }}" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0;">
+        <input type="hidden" name="status" value="{{ status }}"/>
+        <select name="track" onchange="this.form.submit()" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; color: #1e293b; outline: none; cursor: pointer;">
+          <option value="">All Coding Tracks</option>
+          {% for t in round3_assessments %}
+          <option value="{{ t.id }}" {% if selected_track == t.id %}selected{% endif %}>{{ t.title }}</option>
+          {% endfor %}
+        </select>
+
+        <div style="position: relative; width: 260px;">
+          <input type="text" name="search" value="{{ search }}" placeholder="Search candidate / hall ticket..." style="width: 100%; padding: 8px 14px; font-size: 13px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;"/>
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;">Search</button>
+      </form>
+    </div>
+
+    <!-- Scorecards Table Card -->
+    <div class="tech3-table-card">
+      <div class="table-responsive">
+        <table class="table tech3-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="ps-4">Candidate</th>
+              <th>Hall Ticket</th>
+              <th>Track / Assessment</th>
+              <th class="text-center">Coding Score</th>
+              <th class="text-center">Problems Attempted</th>
+              <th class="text-center">Percentage</th>
+              <th class="text-center">Violations</th>
+              <th class="text-center">Status</th>
+              <th>Submitted Time (IST)</th>
+              <th class="pe-4 text-center">Inspect Code</th>
+              <th class="pe-4 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reports %}
+            <tr>
+              <td class="ps-4">
+                <div style="font-weight: 700; color: #0f172a;">{{ r.candidate.full_name }}</div>
+                <div style="font-size: 12px; color: #64748b;">{{ r.candidate.email }}</div>
+              </td>
+              <td>
+                <code style="background: #f1f5f9; color: #059669; padding: 4px 10px; border-radius: 6px; font-weight: 700;">{{ r.candidate.hall_ticket }}</code>
+              </td>
+              <td style="font-size: 13px; font-weight: 600; color: #475569;">
+                {{ r.assessment.title }}
+              </td>
+              <td class="text-center fw-bold" style="font-size: 14px; color: #047857;">
+                {{ r.score or r.coding_score or 0 }} pts
+              </td>
+              <td class="text-center" style="font-size: 13px; font-weight: 600;">
+                {{ r.coding_submissions|length if r.coding_submissions else r.total_questions }} Problems
+              </td>
+              <td class="text-center">
+                <strong style="color: {% if r.status == 'pass' %}#059669{% else %}#dc2626{% endif %}; font-size: 14px;">
+                  {{ "%.1f"|format(r.percentage) }}%
+                </strong>
+              </td>
+              <td class="text-center">
+                {% if r.violations > 0 %}
+                <span style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700; padding: 3px 8px; border-radius: 12px; font-size: 12px;">⚠ {{ r.violations }}</span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if r.status == 'pass' %}
+                  <span class="status-badge-pass">✓ PASSED</span>
+                {% else %}
+                  <span class="status-badge-fail">✕ FAILED</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">
+                {{ r.submitted_at_ist.strftime('%d %b %Y, %I:%M %p') if r.submitted_at_ist else '—' }}
+              </td>
+              <td class="text-center">
+                <button type="button" class="btn-inspect-code" onclick="openCodingModal({{ r.id }})">
+                  💻 View Code &amp; Tests
+                </button>
+              </td>
+              <td class="pe-4 text-center">
+                <button type="button" class="btn-delete-row" onclick="confirmDeleteTech3({{ r.id }}, '{{ r.candidate.full_name|replace("'", "\\'") }}')">
+                  🗑️ Delete
+                </button>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="11" class="text-center py-5 text-muted">
+                <div class="py-4">
+                  <div style="font-size: 36px; margin-bottom: 8px;">💻</div>
+                  <div style="font-size: 16px; font-weight: 600; color: #64748b;">No Technical Round 3 submissions found</div>
+                  <p class="text-muted small mb-0">When candidates complete Round 3 (Live Coding Sandbox), their code submissions, testcase results, and scores will show here.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.report_tech_round_3', page=pagination.prev_num, track=selected_track, status=status, search=search) }}" class="btn btn-ghost">← Prev</a>
+      {% endif %}
+      <span style="font-size: 13px; font-weight: 600; color: #64748b; align-self: center;">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+      {% if pagination.has_next %}
+      <a href="{{ url_for('admin.report_tech_round_3', page=pagination.next_num, track=selected_track, status=status, search=search) }}" class="btn btn-ghost">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+
+<!-- Coding Submission Inspection Modal -->
+<div class="code-modal-overlay" id="codeModalOverlay" onclick="if(event.target===this) closeCodingModal();">
+  <div class="code-modal-card">
+    <div class="code-modal-header">
+      <div>
+        <h4 style="margin: 0; font-size: 18px; font-weight: 800; color: #fff;" id="mCodeCandName">Candidate Code &amp; Testcase Evaluation</h4>
+        <div style="font-size: 12.5px; color: #a7f3d0; margin-top: 2px;" id="mCodeTrackInfo">Technical Round 3 (Live Coding)</div>
+      </div>
+      <button onclick="closeCodingModal()" style="background: rgba(255,255,255,0.1); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;">✕</button>
+    </div>
+
+    <div class="code-modal-body" id="codeModalBody">
+      <div style="text-align: center; padding: 40px; color: #94a3b8;">Loading code submissions and testcase data...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function openCodingModal(subId) {
+  const modal = document.getElementById('codeModalOverlay');
+  const body = document.getElementById('codeModalBody');
+  const candNameEl = document.getElementById('mCodeCandName');
+  const trackInfoEl = document.getElementById('mCodeTrackInfo');
+
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">Loading code submissions and testcase data...</div>';
+
+  try {
+    const res = await fetch(`/admin/api/submissions/${subId}/coding-details`);
+    const data = await res.json();
+
+    candNameEl.textContent = `${data.candidate_name} (${data.hall_ticket})`;
+    trackInfoEl.textContent = `${data.assessment_title} • Total Score: ${data.score} pts (${data.percentage.toFixed(1)}%) • Violations: ${data.violations}`;
+
+    if (!data.problems || data.problems.length === 0) {
+      body.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">No coding challenges recorded for this submission.</div>';
+      return;
+    }
+
+    let html = '';
+    data.problems.forEach((p, idx) => {
+      const isAccepted = p.status === 'Accepted' || (p.passed_testcases === p.total_testcases && p.total_testcases > 0);
+      const badgeColor = isAccepted ? '#10b981' : (p.passed_testcases > 0 ? '#f59e0b' : '#ef4444');
+      const badgeBg = isAccepted ? 'rgba(16, 185, 129, 0.15)' : (p.passed_testcases > 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)');
+
+      html += `
+        <div class="code-problem-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-size: 16px; font-weight: 800; color: #f8fafc;">Problem ${idx + 1}: ${escapeHtml(p.title)}</span>
+                <span style="background: rgba(255,255,255,0.1); color: #cbd5e1; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">${escapeHtml(p.difficulty)}</span>
+              </div>
+              <div style="font-size: 12.5px; color: #94a3b8;">
+                Language: <strong style="color: #38bdf8; text-transform: uppercase;">${escapeHtml(p.language)}</strong>
+                ${p.execution_time_ms ? ` • Execution Time: <strong>${p.execution_time_ms} ms</strong>` : ''}
+              </div>
+            </div>
+
+            <div style="text-align: right;">
+              <span style="background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; font-size: 12px; padding: 4px 12px; border-radius: 50px; display: inline-block; margin-bottom: 4px;">
+                ${escapeHtml(p.status || 'Submitted')} (${p.passed_testcases} / ${p.total_testcases} Tests Passed)
+              </span>
+              <div style="font-size: 13px; font-weight: 700; color: #a7f3d0;">Score: ${p.score} / ${p.points} pts</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 10px;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">
+              Candidate's Submitted Source Code:
+            </div>
+            <div class="code-block-container">
+              <button class="btn-copy-code" onclick="copySourceCode(this, 'code_box_${idx}')">📋 Copy Code</button>
+              <pre id="code_box_${idx}"><code>${escapeHtml(p.source_code || '// No code submitted')}</code></pre>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    body.innerHTML = html;
+  } catch (err) {
+    body.innerHTML = '<div style="text-align: center; padding: 40px; color: #ef4444;">Failed to load coding submission details.</div>';
+  }
+}
+
+function closeCodingModal() {
+  document.getElementById('codeModalOverlay').style.display = 'none';
+}
+
+function copySourceCode(btn, elementId) {
+  const codeEl = document.getElementById(elementId);
+  if (codeEl) {
+    navigator.clipboard.writeText(codeEl.innerText).then(() => {
+      btn.innerText = '✓ Copied!';
+      setTimeout(() => { btn.innerText = '📋 Copy Code'; }, 2000);
+    });
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function confirmDeleteTech3(subId, name) {
+  if (confirm(`Are you sure you want to permanently delete the Round 3 coding assessment submission for "${name}" (ID #${subId})?`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/submissions/${subId}/delete`;
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = '{{ csrf_token() }}';
+    form.appendChild(csrfInput);
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+</script>
+{% endblock %}
