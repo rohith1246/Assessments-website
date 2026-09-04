@@ -136,17 +136,19 @@ def dashboard():
 
     user_submissions = Submission.query.filter_by(candidate_id=candidate_id).all()
 
-    sub_round1 = next((s for s in user_submissions if 'Round 2' not in (s.assessment.title or '') and s.assessment_id != 4 and s.status != 'in_progress'), None)
-    sub_round2 = next((s for s in user_submissions if ('Round 2' in (s.assessment.title or '') or s.assessment_id == 4) and s.status != 'in_progress'), None)
+    sub_round1 = next((s for s in user_submissions if 'Round 2' not in (s.assessment.title or '') and 'Round 3' not in (s.assessment.title or '') and s.status != 'in_progress'), None)
+    sub_round2 = next((s for s in user_submissions if 'Round 2' in (s.assessment.title or '') and s.status != 'in_progress'), None)
+    sub_round3 = next((s for s in user_submissions if ('Round 3' in (s.assessment.title or '') or 'Coding' in (s.assessment.title or '')) and s.status != 'in_progress'), None)
 
-    in_prog_round1 = next((s for s in user_submissions if 'Round 2' not in (s.assessment.title or '') and s.assessment_id != 4 and s.status == 'in_progress'), None)
-    in_prog_round2 = next((s for s in user_submissions if ('Round 2' in (s.assessment.title or '') or s.assessment_id == 4) and s.status == 'in_progress'), None)
+    in_prog_round1 = next((s for s in user_submissions if 'Round 2' not in (s.assessment.title or '') and 'Round 3' not in (s.assessment.title or '') and s.status == 'in_progress'), None)
+    in_prog_round2 = next((s for s in user_submissions if 'Round 2' in (s.assessment.title or '') and s.status == 'in_progress'), None)
+    in_prog_round3 = next((s for s in user_submissions if ('Round 3' in (s.assessment.title or '') or 'Coding' in (s.assessment.title or '')) and s.status == 'in_progress'), None)
 
     round1_assessments = Assessment.query.filter(
         Assessment.status == 'active',
-        Assessment.id != 4,
-        ~Assessment.title.ilike('%Coding%'),
-        ~Assessment.title.ilike('%Round 2%')
+        ~Assessment.title.ilike('%Round 2%'),
+        ~Assessment.title.ilike('%Round 3%'),
+        ~Assessment.title.ilike('%Coding%')
     ).order_by(Assessment.id).all()
 
     round2_assessments = Assessment.query.filter(
@@ -154,15 +156,23 @@ def dashboard():
         Assessment.title.ilike('%Round 2%')
     ).order_by(Assessment.id).all()
 
+    round3_assessments = Assessment.query.filter(
+        Assessment.status == 'active',
+        Assessment.title.ilike('%Round 3%')
+    ).order_by(Assessment.id).all()
+
     return render_template(
         'candidate/dashboard.html',
         candidate=candidate,
         sub_round1=sub_round1,
         sub_round2=sub_round2,
+        sub_round3=sub_round3,
         in_prog_round1=in_prog_round1,
         in_prog_round2=in_prog_round2,
+        in_prog_round3=in_prog_round3,
         round1_assessments=round1_assessments,
-        round2_assessments=round2_assessments
+        round2_assessments=round2_assessments,
+        round3_assessments=round3_assessments
     )
 
 

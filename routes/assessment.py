@@ -126,16 +126,18 @@ def engine():
     assessment = db.session.get(Assessment, assessment_id)
     candidate = db.session.get(Candidate, session['candidate_id'])
 
-    is_coding_round = False
+    is_coding_round = ('Round 3' in (assessment.title or '') or 'Coding' in (assessment.title or '') or assessment_id in (4, 20, 21, 22, 23, 24, 25))
 
     if is_coding_round:
         shuffled_questions = []
         questions_data = []
         saved_answers = {}
-        # Fetch Coding Problems for Round 2 ONLY
-        coding_problems = CodingProblem.query.filter(
-            db.or_(CodingProblem.assessment_id == assessment_id, CodingProblem.assessment_id.is_(None))
-        ).order_by(CodingProblem.id).all()
+        # Fetch Coding Problems for Round 3
+        coding_problems = CodingProblem.query.filter_by(assessment_id=assessment_id).order_by(CodingProblem.id).all()
+        if not coding_problems:
+            coding_problems = CodingProblem.query.filter(
+                db.or_(CodingProblem.assessment_id == assessment_id, CodingProblem.assessment_id.is_(None))
+            ).order_by(CodingProblem.id).all()
 
         coding_problems_data = []
         for p in coding_problems:
@@ -466,21 +468,23 @@ def submit():
         # Already submitted
         return redirect(url_for('assessment.result', submission_id=submission.id))
 
-    is_coding_round = False
-    pass_pct = submission.assessment.pass_percentage if submission.assessment else 75.0
+    is_coding_round = ('Round 3' in (submission.assessment.title or '') or 'Coding' in (submission.assessment.title or '') or submission.assessment_id in (4, 20, 21, 22, 23, 24, 25))
+    pass_pct = submission.assessment.pass_percentage if submission.assessment else 70.0
 
     if is_coding_round:
-        # Sum coding score from coding submissions for Round 2
+        # Sum coding score from coding submissions for Round 3
         total_coding_pts = db.session.query(func.coalesce(func.sum(CodingSubmission.score), 0)).filter_by(
             submission_id=submission.id
         ).scalar() or 0
         
-        max_coding_pts = db.session.query(func.coalesce(func.sum(CodingProblem.points), 0)).filter(
-            db.or_(CodingProblem.assessment_id == submission.assessment_id, CodingProblem.assessment_id.is_(None))
-        ).scalar() or 200
+        max_coding_pts = db.session.query(func.coalesce(func.sum(CodingProblem.points), 0)).filter_by(
+            assessment_id=submission.assessment_id
+        ).scalar()
+        if not max_coding_pts or max_coding_pts == 0:
+            max_coding_pts = 200
         
-        coding_problems_count = db.session.query(func.count(CodingProblem.id)).filter(
-            db.or_(CodingProblem.assessment_id == submission.assessment_id, CodingProblem.assessment_id.is_(None))
+        coding_problems_count = db.session.query(func.count(CodingProblem.id)).filter_by(
+            assessment_id=submission.assessment_id
         ).scalar() or 2
 
         percentage = round((total_coding_pts / max_coding_pts * 100), 2) if max_coding_pts > 0 else 0.0
@@ -558,7 +562,7 @@ def result(submission_id):
             flash('Unauthorized access.', 'danger')
             return redirect(url_for('candidate.register'))
 
-    is_coding_round = (submission.assessment_id == 4 or 'Coding' in (submission.assessment.title or '') or 'Sandbox' in (submission.assessment.title or ''))
+    is_coding_round = ('Round 3' in (submission.assessment.title or '') or 'Coding' in (submission.assessment.title or '') or submission.assessment_id in (4, 20, 21, 22, 23, 24, 25))
     questions = _get_cached_questions(submission.assessment_id) if not is_coding_round else []
     answers = {a.question_id: a.selected_option for a in submission.answers}
 
@@ -580,7 +584,7 @@ def result(submission_id):
             if user_ans.upper() != (q.correct_answer or '').strip().upper():
                 wrong += 1
 
-    is_round2 = ('Round 2' in (submission.assessment.title or '') or 'Technical Round' in (submission.assessment.title or '') or submission.assessment_id == 4)
+    is_round2 = ('Round 2' in (submission.assessment.title or '') or 'Technical Round 2' in (submission.assessment.title or ''))
 
     return render_template(
         'candidate/result.html',

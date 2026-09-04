@@ -381,6 +381,38 @@
     box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
   }
 
+  .round-card-r3::before {
+    background: linear-gradient(90deg, #10b981, #34d399);
+  }
+  .tag-r3 {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  .btn-launch-r3 {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff !important;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 13px 20px;
+    border-radius: 10px;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+  .btn-launch-r3:hover {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  }
+
   /* Scorecard Widget */
   .scorecard-mini {
     background: rgba(0, 0, 0, 0.25);
@@ -474,18 +506,18 @@
   <div class="pipeline-header-wrap">
     <div>
       <h2 class="pipeline-title">Assessment Recruitment Stages</h2>
-      <p class="pipeline-sub">Complete both recruitment rounds to qualify for the interview shortlist</p>
+      <p class="pipeline-sub">Complete all 3 recruitment rounds to qualify for final interview shortlisting</p>
     </div>
   </div>
 
-  <!-- Dual Rounds Grid -->
+  <!-- 3 Rounds Grid -->
   <div class="rounds-grid">
 
     <!-- ── ROUND 1: ONLINE ASSESSMENT (MCQs) ── -->
     <div class="round-card round-card-r1">
       <div>
         <div class="round-header">
-          <span class="round-step-tag tag-r1">Round 1 — Foundation</span>
+          <span class="round-step-tag tag-r1">Round 1 — Preliminary (MCQ)</span>
           {% if sub_round1 %}
             {% if sub_round1.status == 'pass' %}
               <span class="round-status-pill status-passed">✓ PASSED</span>
@@ -499,12 +531,12 @@
           {% endif %}
         </div>
 
-        <h3 class="round-card-title">Online Preliminary Assessment</h3>
+        <h3 class="round-card-title">Online Preliminary Screening</h3>
         <p class="round-card-desc">General Aptitude, Analytical Reasoning, and Core Technical Foundations.</p>
 
         <div class="spec-chips-list">
           <span class="spec-chip">⏱️ 20 Minutes</span>
-          <span class="spec-chip">📝 20–30 MCQs</span>
+          <span class="spec-chip">📝 20 MCQs</span>
           <span class="spec-chip">🎯 25% Pass Cutoff</span>
           <span class="spec-chip">🛡️ Screenshare Monitored</span>
         </div>
@@ -550,9 +582,11 @@
                     <option value="{{ a.id }}">{{ a.title }} ({{ a.duration }} Mins)</option>
                   {% endfor %}
                 {% else %}
-                  <option value="1">Comprehensive IT &amp; Software Engineering (20 Mins)</option>
-                  <option value="2">Non-IT, Healthcare BPO &amp; Operations (20 Mins)</option>
-                  <option value="3">Pharmacy &amp; Life Sciences (20 Mins)</option>
+                  <option value="9">Screening Test - Python Developer (20 Mins)</option>
+                  <option value="10">Screening Test - Java Developer (20 Mins)</option>
+                  <option value="11">Screening Test - Cyber Security (20 Mins)</option>
+                  <option value="12">Screening Test - Data Analyst (20 Mins)</option>
+                  <option value="13">Screening Test - .NET Developer (20 Mins)</option>
                 {% endif %}
               </select>
             </div>
@@ -568,7 +602,7 @@
     <div class="round-card round-card-r2">
       <div>
         <div class="round-header">
-          <span class="round-step-tag tag-r2">Round 2 — Technical Evaluation (FIB)</span>
+          <span class="round-step-tag tag-r2">Round 2 — Technical (FIB)</span>
           {% if sub_round2 %}
             {% if sub_round2.status == 'pass' %}
               <span class="round-status-pill status-passed">✓ PASSED</span>
@@ -583,7 +617,7 @@
         </div>
 
         <h3 class="round-card-title">Technical Fill In The Blanks Round</h3>
-        <p class="round-card-desc">Advanced core domain evaluation testing precise syntax, architecture, protocols, internals, and edge cases.</p>
+        <p class="round-card-desc">Domain concepts, syntax precision, and Linux/Docker/Git fundamentals.</p>
 
         <div class="spec-chips-list">
           <span class="spec-chip">⏱️ 20 Minutes</span>
@@ -638,11 +672,98 @@
                   <option value="16">Technical Round 2 - Cyber Security (20 Mins)</option>
                   <option value="17">Technical Round 2 - Data Analyst (20 Mins)</option>
                   <option value="18">Technical Round 2 - .NET Developer (20 Mins)</option>
+                  <option value="19">Technical Round 2 - SAP MM (20 Mins)</option>
                 {% endif %}
               </select>
             </div>
             <button type="submit" class="btn-launch-r2">
               ✍️ Start Round 2 (Fill in the Blanks)
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── ROUND 3: LIVE CODING & ALGORITHMS SANDBOX (MONACO IDE) ── -->
+    <div class="round-card round-card-r3">
+      <div>
+        <div class="round-header">
+          <span class="round-step-tag tag-r3">Round 3 — Live Coding (IDE)</span>
+          {% if sub_round3 %}
+            {% if sub_round3.status == 'pass' %}
+              <span class="round-status-pill status-passed">✓ PASSED</span>
+            {% else %}
+              <span class="round-status-pill status-failed">✕ FAILED</span>
+            {% endif %}
+          {% elif in_prog_round3 %}
+            <span class="round-status-pill status-inprog">⏳ In Progress</span>
+          {% else %}
+            <span class="round-status-pill status-ready">● Ready to Start</span>
+          {% endif %}
+        </div>
+
+        <h3 class="round-card-title">Live Technical Coding Sandbox</h3>
+        <p class="round-card-desc">Interactive code execution testing algorithms, edge cases, and real-time execution.</p>
+
+        <div class="spec-chips-list">
+          <span class="spec-chip">⏱️ 45 Minutes</span>
+          <span class="spec-chip">💻 2 Coding Problems</span>
+          <span class="spec-chip">🎯 70% Pass Cutoff</span>
+          <span class="spec-chip">⚡ Monaco IDE Execution</span>
+        </div>
+      </div>
+
+      <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+        {% if sub_round3 %}
+          <div class="scorecard-mini">
+            <div class="sc-row">
+              <span class="sc-label">Coding Track:</span>
+              <span class="sc-val" style="color: #34d399; font-size: 12px;">{{ sub_round3.assessment.title }}</span>
+            </div>
+            <div class="sc-row">
+              <span class="sc-label">Coding Score:</span>
+              <span class="sc-val">{{ sub_round3.coding_score }} / {{ sub_round3.total_questions * 100 }} pts</span>
+            </div>
+            <div class="sc-row">
+              <span class="sc-label">Result:</span>
+              <span class="sc-val" style="color: {% if sub_round3.status == 'pass' %}#10b981{% else %}#ef4444{% endif %};">
+                {{ sub_round3.status|upper }}
+              </span>
+            </div>
+          </div>
+          <a href="{{ url_for('assessment.result', submission_id=sub_round3.id) }}" class="btn-view-score">
+            View Coding Result →
+          </a>
+        {% elif in_prog_round3 %}
+          <form method="POST" action="{{ url_for('assessment.start') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="assessment_id" value="{{ in_prog_round3.assessment_id }}"/>
+            <button type="submit" class="btn-launch-r3" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+              ▶️ Resume Round 3 Coding Test
+            </button>
+          </form>
+        {% else %}
+          <form method="POST" action="{{ url_for('assessment.start') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div style="margin-bottom: 12px; text-align: left;">
+              <label style="font-size: 11.5px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block;">Select Round 3 Coding Track:</label>
+              <select name="assessment_id" class="track-select-box" style="border-color: rgba(16, 185, 129, 0.3);">
+                {% if round3_assessments %}
+                  {% for a in round3_assessments %}
+                    <option value="{{ a.id }}">{{ a.title }} ({{ a.duration }} Mins)</option>
+                  {% endfor %}
+                {% else %}
+                  <option value="20">Technical Round 3 - Python Developer (45 Mins)</option>
+                  <option value="21">Technical Round 3 - Java Developer (45 Mins)</option>
+                  <option value="22">Technical Round 3 - Cyber Security (45 Mins)</option>
+                  <option value="23">Technical Round 3 - Data Analyst (45 Mins)</option>
+                  <option value="24">Technical Round 3 - .NET Developer (45 Mins)</option>
+                  <option value="25">Technical Round 3 - Full Stack Developer (45 Mins)</option>
+                {% endif %}
+              </select>
+            </div>
+            <button type="submit" class="btn-launch-r3">
+              💻 Start Round 3 (Live Coding Sandbox)
             </button>
           </form>
         {% endif %}
